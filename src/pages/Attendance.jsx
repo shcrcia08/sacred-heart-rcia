@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
@@ -148,13 +148,14 @@ function AbsenceDashboard() {
   const [totalAbsences, setTotalAbsences] = useState(0)
   const [sessionsHeld, setSessionsHeld] = useState(0)
   const [breakdown, setBreakdown] = useState([])
+  const [expanded, setExpanded] = useState({})
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       const today = new Date().toISOString().slice(0, 10)
       const [{ data: absentRows, error: aErr }, { data: profileRows, error: pErr }, { count: sessionCount, error: sErr }] = await Promise.all([
-        supabase.from('attendance').select('person_id').eq('status', 'absent'),
+        supabase.from('attendance').select('person_id, note, important_dates(title, event_date)').eq('status', 'absent'),
         supabase.from('profiles').select('id, full_name, role'),
         supabase.from('important_dates').select('id', { count: 'exact', head: true }).eq('is_session', true).lte('event_date', today),
       ])
@@ -164,16 +165,24 @@ function AbsenceDashboard() {
 
       if (absentRows) {
         setTotalAbsences(absentRows.length)
-        const counts = {}
-        absentRows.forEach((r) => { counts[r.person_id] = (counts[r.person_id] ?? 0) + 1 })
+        const grouped = {}
+        absentRows.forEach((r) => {
+          if (!grouped[r.person_id]) grouped[r.person_id] = []
+          grouped[r.person_id].push({
+            title: r.important_dates?.title ?? 'Session',
+            event_date: r.important_dates?.event_date,
+            note: r.note,
+          })
+        })
         const profileMap = {}
         ;(profileRows ?? []).forEach((p) => { profileMap[p.id] = p })
-        const rows = Object.entries(counts)
-          .map(([personId, count]) => ({
+        const rows = Object.entries(grouped)
+          .map(([personId, records]) => ({
             id: personId,
             full_name: profileMap[personId]?.full_name ?? 'Unknown',
             role: profileMap[personId]?.role ?? '—',
-            count,
+            count: records.length,
+            records: records.sort((a, b) => (a.event_date ?? '').localeCompare(b.event_date ?? '')),
           }))
           .sort((a, b) => b.count - a.count)
         setBreakdown(rows)
@@ -183,6 +192,10 @@ function AbsenceDashboard() {
     }
     load()
   }, [])
+
+  const toggleExpanded = (id) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
 
   return (
     <div className="card">
@@ -207,14 +220,32 @@ function AbsenceDashboard() {
           ) : (
             <div className="scroll-table">
               <table>
-                <thead><tr><th>Name</th><th>Role</th><th>Absences</th></tr></thead>
+                <thead><tr><th></th><th>Name</th><th>Role</th><th>Absences</th></tr></thead>
                 <tbody>
                   {breakdown.map((p) => (
-                    <tr key={p.id}>
-                      <td>{p.full_name}</td>
-                      <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
-                      <td>{p.count}</td>
-                    </tr>
+                    <Fragment key={p.id}>
+                      <tr onClick={() => toggleExpanded(p.id)} style={{ cursor: 'pointer' }}>
+                        <td style={{ width: 20, color: 'var(--ink-soft)' }}>{expanded[p.id] ? '▾' : '▸'}</td>
+                        <td>{p.full_name}</td>
+                        <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
+                        <td>{p.count}</td>
+                      </tr>
+                      {expanded[p.id] && (
+                        <tr>
+                          <td></td>
+                          <td colSpan={3} style={{ paddingTop: 0, paddingBottom: 12 }}>
+                            {p.records.map((r, i) => (
+                              <div key={i} style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', padding: '3px 0' }}>
+                                {r.event_date
+                                  ? new Date(r.event_date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+                                  : r.title}
+                                {r.note ? ` — ${r.note}` : ''}
+                              </div>
+                            ))}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -264,26 +295,46 @@ function ManagerView({ isAdmin }) {
     loadSessions().finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => {
+  const loadRollup = async () => {
     if (!selectedDate) return
-    const loadRollup = async () => {
-      const [{ data: peopleRows, error: pErr }, { data: attRows, error: aErr }] = await Promise.all([
-        supabase.from('profiles').select('*').order('full_name'),
-        supabase.from('attendance').select('*').eq('important_date_id', selectedDate),
-      ])
-      if (pErr) setError(pErr.message)
-      else setPeople(peopleRows)
-      if (aErr) setError(aErr.message)
-      else {
-        const map = {}
-        attRows.forEach((r) => { map[r.person_id] = r })
-        setRecords(map)
-      }
+    const [{ data: peopleRows, error: pErr }, { data: attRows, error: aErr }] = await Promise.all([
+      supabase.from('profiles').select('*').order('full_name'),
+      supabase.from('attendance').select('*').eq('important_date_id', selectedDate),
+    ])
+    if (pErr) setError(pErr.message)
+    else setPeople(peopleRows)
+    if (aErr) setError(aErr.message)
+    else {
+      const map = {}
+      attRows.forEach((r) => { map[r.person_id] = r })
+      setRecords(map)
     }
+  }
+
+  useEffect(() => {
     loadRollup()
   }, [selectedDate])
 
   const absentCount = people.filter((p) => records[p.id]?.status === 'absent').length
+
+  const handleOverrideAbsent = async (personId) => {
+    const note = window.prompt('Reason (optional):') ?? ''
+    const { error } = await supabase.from('attendance').upsert(
+      { important_date_id: selectedDate, person_id: personId, status: 'absent', note },
+      { onConflict: 'important_date_id,person_id' }
+    )
+    if (error) setError(error.message)
+    else loadRollup()
+  }
+
+  const handleOverridePresent = async (personId) => {
+    const { error } = await supabase.from('attendance').upsert(
+      { important_date_id: selectedDate, person_id: personId, status: 'present', note: '' },
+      { onConflict: 'important_date_id,person_id' }
+    )
+    if (error) setError(error.message)
+    else loadRollup()
+  }
 
   const handleAddSingle = async (e) => {
     e.preventDefault()
@@ -479,7 +530,7 @@ function ManagerView({ isAdmin }) {
           <div className="scroll-table">
             <table>
               <thead>
-                <tr><th>Name</th><th>Role</th><th>Status</th><th>Reason</th></tr>
+                <tr><th>Name</th><th>Role</th><th>Status</th><th>Reason</th><th></th></tr>
               </thead>
               <tbody>
                 {people.map((p) => {
@@ -491,12 +542,22 @@ function ManagerView({ isAdmin }) {
                       <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
                       <td><span className={`status-pill status-${status}`}>{status === 'absent' ? 'Absent' : 'Attending'}</span></td>
                       <td>{rec?.note || '—'}</td>
+                      <td>
+                        {status === 'absent' ? (
+                          <button className="btn secondary small" onClick={() => handleOverridePresent(p.id)}>Mark Present</button>
+                        ) : (
+                          <button className="btn danger small" onClick={() => handleOverrideAbsent(p.id)}>Mark Absent</button>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
           </div>
+          <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
+            As Admin, you can mark or correct attendance on someone's behalf if they haven't done it themselves.
+          </p>
         </div>
       )}
     </div>

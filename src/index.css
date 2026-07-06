@@ -422,6 +422,10 @@ th { color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; text-transform
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
+.mobile-only-nav-item {
+  display: none;
+}
+
 @media (max-width: 780px) {
   .app-shell { flex-direction: column; }
   .sidebar {
@@ -435,6 +439,15 @@ th { color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; text-transform
   }
   .sidebar-brand { border: none; margin: 0; padding: 0 12px 0 0; }
   .nav-links { flex-direction: row; padding: 0; }
+  .mobile-only-nav-item {
+    display: flex;
+    white-space: nowrap;
+    border: 1px solid var(--line);
+    font-family: var(--font-body);
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--white);
+  }
   .sidebar-footer { display: none; }
   .main-content { padding: 20px; }
 }

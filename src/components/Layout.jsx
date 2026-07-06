@@ -50,6 +50,14 @@ export default function Layout() {
               Manage Users
             </NavLink>
           )}
+
+          {session ? (
+            <button className="nav-link mobile-only-nav-item" onClick={signOut}>Sign Out</button>
+          ) : (
+            <NavLink to="/login" className={({ isActive }) => 'nav-link mobile-only-nav-item' + (isActive ? ' active' : '')}>
+              Sign In
+            </NavLink>
+          )}
         </div>
 
         <div className="sidebar-footer">

@@ -363,6 +363,26 @@ th { color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; text-transform
   margin-bottom: 14px;
 }
 
+.scroll-cards {
+  max-height: 900px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.scroll-table {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.scroll-table table { margin: 0; }
+
+.scroll-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--white);
+  z-index: 1;
+}
+
 /* ---------- Login page ---------- */
 
 .login-page {

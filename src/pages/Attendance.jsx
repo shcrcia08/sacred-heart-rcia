@@ -94,42 +94,44 @@ function MyAttendance({ profile }) {
           <p>Once Admin schedules the next RCIA session, you can mark your attendance here.</p>
         </div>
       ) : (
-        dates.map((d) => {
-          const rec = myRecords[d.id]
-          const status = rec?.status ?? 'present'
-          return (
-            <div className="card" key={d.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <h3 style={{ marginBottom: 4 }}>{d.title}</h3>
-                <span className={`status-pill status-${status}`}>
-                  {status === 'absent' ? 'Marked Absent' : 'Attending'}
-                </span>
-              </div>
-              <p style={{ color: 'var(--ink-soft)', margin: '4px 0 12px 0' }}>
-                {new Date(d.event_date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                {d.location ? ` · ${d.location}` : ''}
-              </p>
+        <div className="scroll-cards">
+          {dates.map((d) => {
+            const rec = myRecords[d.id]
+            const status = rec?.status ?? 'present'
+            return (
+              <div className="card" key={d.id}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <h3 style={{ marginBottom: 4 }}>{d.title}</h3>
+                  <span className={`status-pill status-${status}`}>
+                    {status === 'absent' ? 'Marked Absent' : 'Attending'}
+                  </span>
+                </div>
+                <p style={{ color: 'var(--ink-soft)', margin: '4px 0 12px 0' }}>
+                  {new Date(d.event_date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  {d.location ? ` · ${d.location}` : ''}
+                </p>
 
-              {status === 'present' ? (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    placeholder="Reason (optional)"
-                    style={{ marginBottom: 0 }}
-                    value={noteDrafts[d.id] ?? ''}
-                    onChange={(e) => setNoteDrafts({ ...noteDrafts, [d.id]: e.target.value })}
-                  />
-                  <button className="btn danger" onClick={() => markAbsent(d.id)}>Mark Absent</button>
-                </div>
-              ) : (
-                <div>
-                  {rec?.note && <p style={{ fontStyle: 'italic', color: 'var(--ink-soft)' }}>Reason: {rec.note}</p>}
-                  <button className="btn secondary" onClick={() => markPresent(d.id)}>I'll be there after all</button>
-                </div>
-              )}
-            </div>
-          )
-        })
+                {status === 'present' ? (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      placeholder="Reason (optional)"
+                      style={{ marginBottom: 0 }}
+                      value={noteDrafts[d.id] ?? ''}
+                      onChange={(e) => setNoteDrafts({ ...noteDrafts, [d.id]: e.target.value })}
+                    />
+                    <button className="btn danger" onClick={() => markAbsent(d.id)}>Mark Absent</button>
+                  </div>
+                ) : (
+                  <div>
+                    {rec?.note && <p style={{ fontStyle: 'italic', color: 'var(--ink-soft)' }}>Reason: {rec.note}</p>}
+                    <button className="btn secondary" onClick={() => markPresent(d.id)}>I'll be there after all</button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )
@@ -346,18 +348,20 @@ function ManagerView({ isAdmin }) {
       {isAdmin && upcoming.length > 0 && (
         <div className="card">
           <h3>Upcoming Sessions</h3>
-          <table>
-            <thead><tr><th>Date</th><th>Title</th><th></th></tr></thead>
-            <tbody>
-              {upcoming.map((d) => (
-                <tr key={d.id}>
-                  <td>{new Date(d.event_date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                  <td>{d.title}</td>
-                  <td><button className="btn danger small" onClick={() => handleDeleteSession(d.id)}>Delete</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="scroll-table">
+            <table>
+              <thead><tr><th>Date</th><th>Title</th><th></th></tr></thead>
+              <tbody>
+                {upcoming.map((d) => (
+                  <tr key={d.id}>
+                    <td>{new Date(d.event_date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                    <td>{d.title}</td>
+                    <td><button className="btn danger small" onClick={() => handleDeleteSession(d.id)}>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -383,25 +387,27 @@ function ManagerView({ isAdmin }) {
             {absentCount} of {people.length} have marked themselves absent
           </p>
 
-          <table>
-            <thead>
-              <tr><th>Name</th><th>Role</th><th>Status</th><th>Reason</th></tr>
-            </thead>
-            <tbody>
-              {people.map((p) => {
-                const rec = records[p.id]
-                const status = rec?.status ?? 'present'
-                return (
-                  <tr key={p.id}>
-                    <td>{p.full_name}</td>
-                    <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
-                    <td><span className={`status-pill status-${status}`}>{status === 'absent' ? 'Absent' : 'Attending'}</span></td>
-                    <td>{rec?.note || '—'}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="scroll-table">
+            <table>
+              <thead>
+                <tr><th>Name</th><th>Role</th><th>Status</th><th>Reason</th></tr>
+              </thead>
+              <tbody>
+                {people.map((p) => {
+                  const rec = records[p.id]
+                  const status = rec?.status ?? 'present'
+                  return (
+                    <tr key={p.id}>
+                      <td>{p.full_name}</td>
+                      <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
+                      <td><span className={`status-pill status-${status}`}>{status === 'absent' ? 'Absent' : 'Attending'}</span></td>
+                      <td>{rec?.note || '—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
+const ROLE_LABELS = {
+  admin: 'Admin',
+  core_team: 'Core Team',
+  sponsor: 'Sponsor',
+  catechumen: 'Catechumen',
+}
+
 export default function Attendance() {
   const { profile, role } = useAuth()
   const isManager = role === 'admin' || role === 'core_team'
@@ -154,7 +161,7 @@ function ManagerView({ isAdmin }) {
       .from('important_dates')
       .select('*')
       .eq('is_session', true)
-      .order('event_date', { ascending: false })
+      .order('event_date', { ascending: true })
     if (error) setError(error.message)
     else {
       setDates(data)
@@ -170,7 +177,7 @@ function ManagerView({ isAdmin }) {
     if (!selectedDate) return
     const loadRollup = async () => {
       const [{ data: peopleRows, error: pErr }, { data: attRows, error: aErr }] = await Promise.all([
-        supabase.from('profiles').select('*').in('role', ['sponsor', 'catechumen']).order('full_name'),
+        supabase.from('profiles').select('*').order('full_name'),
         supabase.from('attendance').select('*').eq('important_date_id', selectedDate),
       ])
       if (pErr) setError(pErr.message)
@@ -387,7 +394,7 @@ function ManagerView({ isAdmin }) {
                 return (
                   <tr key={p.id}>
                     <td>{p.full_name}</td>
-                    <td><span className={`role-badge role-${p.role}`}>{p.role === 'sponsor' ? 'Sponsor' : 'Catechumen'}</span></td>
+                    <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
                     <td><span className={`status-pill status-${status}`}>{status === 'absent' ? 'Absent' : 'Attending'}</span></td>
                     <td>{rec?.note || '—'}</td>
                   </tr>

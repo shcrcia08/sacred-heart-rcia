@@ -1,0 +1,426 @@
+:root {
+  --wine: #6E1423;
+  --wine-deep: #4A0E18;
+  --wine-soft: #8C2233;
+  --gold: #B8892B;
+  --gold-light: #E8D5A0;
+  --parchment: #F6F0E3;
+  --parchment-dim: #EFE6D2;
+  --ink: #2B221B;
+  --ink-soft: #6B5D4F;
+  --line: #DED0B4;
+  --success: #3F6B4A;
+  --danger: #A23B2E;
+  --white: #FFFDF8;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+
+  --radius: 10px;
+  --shadow: 0 2px 10px rgba(43, 34, 27, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--parchment);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--wine-deep);
+  margin: 0 0 0.4em 0;
+  font-weight: 600;
+}
+
+a { color: var(--wine); }
+
+button, input, select, textarea {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* ---------- Layout shell ---------- */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+}
+
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--wine-deep);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  margin-bottom: 16px;
+}
+
+.sacred-heart-mark {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-text {
+  font-family: var(--font-display);
+  line-height: 1.15;
+}
+
+.sidebar-brand-text .parish {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.sidebar-brand-text .ministry {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--gold-light);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 12px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+
+.nav-link:hover { background: rgba(255,255,255,0.08); }
+
+.nav-link.active {
+  background: var(--gold);
+  color: var(--wine-deep);
+  font-weight: 600;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px 0 20px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  font-size: 0.82rem;
+}
+
+.sidebar-footer .role-badge {
+  display: inline-block;
+  margin-top: 6px;
+}
+
+.sign-out-btn {
+  margin-top: 12px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: var(--white);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.sign-out-btn:hover { background: rgba(255,255,255,0.1); }
+
+.main-content {
+  flex: 1;
+  padding: 32px 40px;
+  max-width: 980px;
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.page-header p.subtitle {
+  color: var(--ink-soft);
+  margin: 4px 0 0 0;
+}
+
+/* ---------- Cards & UI ---------- */
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+
+.card + .card { margin-top: 16px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--wine);
+  color: var(--white);
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.btn:hover { background: var(--wine-soft); }
+
+.btn.secondary {
+  background: transparent;
+  color: var(--wine);
+  border: 1px solid var(--wine);
+}
+
+.btn.secondary:hover { background: rgba(110, 20, 35, 0.06); }
+
+.btn.gold {
+  background: var(--gold);
+  color: var(--wine-deep);
+}
+
+.btn.gold:hover { background: #a67a24; }
+
+.btn.whatsapp {
+  background: #2E7D5B;
+  color: white;
+}
+
+.btn.whatsapp:hover { background: #256349; }
+
+.btn.danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn.small { padding: 5px 10px; font-size: 0.8rem; }
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 5px;
+}
+
+input[type="text"], input[type="email"], input[type="password"], input[type="tel"],
+input[type="date"], input[type="time"], select, textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+
+textarea { resize: vertical; min-height: 80px; }
+
+.field-row {
+  display: flex;
+  gap: 14px;
+}
+.field-row > div { flex: 1; }
+
+.role-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.role-admin { background: var(--wine); color: white; }
+.role-core_team { background: var(--gold); color: var(--wine-deep); }
+.role-sponsor { background: #D9C9A3; color: var(--ink); }
+.role-catechumen { background: var(--parchment-dim); color: var(--ink); border: 1px solid var(--line); }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ink-soft);
+}
+
+.empty-state h3 { color: var(--ink-soft); }
+
+.divider-heart {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--gold);
+  margin: 28px 0 16px 0;
+}
+.divider-heart::before, .divider-heart::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+
+table { width: 100%; border-collapse: collapse; }
+th, td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+th { color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
+.status-pill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.status-present { background: #E1EEE4; color: var(--success); }
+.status-absent { background: #F5E1DD; color: var(--danger); }
+
+.error-msg {
+  background: #F5E1DD;
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  margin-bottom: 14px;
+}
+
+.success-msg {
+  background: #E1EEE4;
+  color: var(--success);
+  padding: 10px 14px;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  margin-bottom: 14px;
+}
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-top: -8px;
+  margin-bottom: 14px;
+}
+
+/* ---------- Login page ---------- */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--wine-deep) 0%, var(--wine) 55%, var(--wine-soft) 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--white);
+  border-radius: 14px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-brand .sacred-heart-mark {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px auto;
+  display: block;
+}
+
+.login-brand .ministry {
+  color: var(--gold);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.login-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: var(--parchment);
+  padding: 4px;
+  border-radius: 8px;
+}
+.login-toggle button {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.login-toggle button.active {
+  background: var(--white);
+  color: var(--wine);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 780px) {
+  .app-shell { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 16px;
+    overflow-x: auto;
+  }
+  .sidebar-brand { border: none; margin: 0; padding: 0 12px 0 0; }
+  .nav-links { flex-direction: row; padding: 0; }
+  .sidebar-footer { display: none; }
+  .main-content { padding: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

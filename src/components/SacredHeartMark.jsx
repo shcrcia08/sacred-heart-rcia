@@ -1,4 +1,4 @@
-export function SacredHeartMark({ size = 30, color = '#E8D5A0' }) {
+export function SacredHeartMark({ size = 30, color = '#A9843A' }) {
   return (
     <svg
       className="sacred-heart-mark"

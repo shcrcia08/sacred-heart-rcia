@@ -18,7 +18,7 @@ export default function Layout() {
     <div className="app-shell">
       <nav className="sidebar">
         <div className="sidebar-brand">
-          <SacredHeartMark size={30} color="#E8D5A0" />
+          <SacredHeartMark size={30} color="#A9843A" />
           <div className="sidebar-brand-text">
             <span className="parish">Sacred Heart</span>
             <span className="ministry">RCIA Ministry</span>

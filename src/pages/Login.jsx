@@ -52,7 +52,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-brand">
-          <SacredHeartMark size={48} color="#6E1423" />
+          <SacredHeartMark size={48} color="#A9843A" />
           <h2 style={{ marginBottom: 2 }}>Church of the Sacred Heart</h2>
           <span className="ministry">RCIA Ministry Portal</span>
         </div>

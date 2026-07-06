@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { useAuth } from '../context/AuthContext'
 
 const ROLES = ['admin', 'core_team', 'sponsor', 'catechumen']
 const ROLE_LABELS = { admin: 'Admin', core_team: 'Core Team', sponsor: 'Sponsor', catechumen: 'Catechumen' }
 
 export default function Users() {
+  const { user } = useAuth()
   const [profiles, setProfiles] = useState([])
   const [cycles, setCycles] = useState([])
   const [newCycleLabel, setNewCycleLabel] = useState('')
@@ -29,6 +31,20 @@ export default function Users() {
 
   const handleRoleChange = async (id, newRole) => {
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', id)
+    if (error) setError(error.message)
+    else load()
+  }
+
+  const handleDeleteUser = async (p) => {
+    const confirmed = confirm(
+      `Remove ${p.full_name} from the app?\n\n` +
+      `This deletes their profile — their name, role, group assignments, and attendance records will be removed. ` +
+      `Anything they posted (announcements, etc.) stays, just no longer credited to them.\n\n` +
+      `Note: this does NOT delete their login. If you also want to fully remove their account so the email ` +
+      `can be reused, go to Supabase → Authentication → Users and delete them there too.`
+    )
+    if (!confirmed) return
+    const { error } = await supabase.from('profiles').delete().eq('id', p.id)
     if (error) setError(error.message)
     else load()
   }
@@ -138,7 +154,7 @@ export default function Users() {
       <div className="card">
         {loading ? <p>Loading…</p> : (
           <table>
-            <thead><tr><th>Name</th><th>Phone</th><th>Role</th></tr></thead>
+            <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th></th></tr></thead>
             <tbody>
               {profiles.map((p) => (
                 <tr key={p.id}>
@@ -148,6 +164,11 @@ export default function Users() {
                     <select value={p.role} onChange={(e) => handleRoleChange(p.id, e.target.value)} style={{ marginBottom: 0 }}>
                       {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                     </select>
+                  </td>
+                  <td>
+                    {p.id !== user?.id && (
+                      <button className="btn danger small" onClick={() => handleDeleteUser(p)}>Delete</button>
+                    )}
                   </td>
                 </tr>
               ))}

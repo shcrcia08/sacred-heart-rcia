@@ -41,6 +41,15 @@ create table if not exists sponsor_catechumen (
   unique (sponsor_id, catechumen_id)
 );
 
+create table if not exists schedules (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  file_path text not null,
+  file_url text not null,
+  uploaded_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists attendance (
   id uuid primary key default gen_random_uuid(),
   important_date_id uuid not null references important_dates(id) on delete cascade,
@@ -122,6 +131,7 @@ alter table announcements enable row level security;
 alter table important_dates enable row level security;
 alter table sponsor_catechumen enable row level security;
 alter table attendance enable row level security;
+alter table schedules enable row level security;
 
 -- profiles: everyone signed in can view the directory; admins can update
 -- anyone, members can update their own non-role fields (role changes are
@@ -188,3 +198,30 @@ create policy "attendance_update_own" on attendance for update
 -- After running this file, promote your first Admin:
 -- Table Editor > profiles > find your row > set role = 'admin'
 -- ============================================================
+
+-- ---------- Schedule PDFs ----------
+
+-- schedules: anyone can read; only Admin can upload/remove.
+create policy "schedules_select" on schedules for select
+  using (true);
+
+create policy "schedules_insert_admin" on schedules for insert
+  with check (get_my_role() = 'admin');
+
+create policy "schedules_delete_admin" on schedules for delete
+  using (get_my_role() = 'admin');
+
+-- Storage bucket that holds the actual PDF files (public so links work
+-- without login, matching Announcements/Dates).
+insert into storage.buckets (id, name, public)
+values ('schedules', 'schedules', true)
+on conflict (id) do nothing;
+
+create policy "schedule_files_select" on storage.objects for select
+  using (bucket_id = 'schedules');
+
+create policy "schedule_files_insert_admin" on storage.objects for insert
+  with check (bucket_id = 'schedules' and get_my_role() = 'admin');
+
+create policy "schedule_files_delete_admin" on storage.objects for delete
+  using (bucket_id = 'schedules' and get_my_role() = 'admin');

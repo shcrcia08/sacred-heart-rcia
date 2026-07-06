@@ -1,0 +1,142 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '../supabaseClient'
+import { useAuth } from '../context/AuthContext'
+
+export default function Schedule() {
+  const { profile, role } = useAuth()
+  const canUpload = role === 'admin'
+
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [title, setTitle] = useState('')
+  const [file, setFile] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+
+  const load = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('schedules')
+      .select('*, profiles:uploaded_by(full_name)')
+      .order('created_at', { ascending: false })
+    if (error) setError(error.message)
+    else setItems(data)
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleUpload = async (e) => {
+    e.preventDefault()
+    if (!file) return
+    setUploading(true)
+    setError('')
+
+    const filePath = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`
+
+    const { error: uploadError } = await supabase.storage.from('schedules').upload(filePath, file, {
+      contentType: 'application/pdf',
+    })
+    if (uploadError) {
+      setError(uploadError.message)
+      setUploading(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage.from('schedules').getPublicUrl(filePath)
+
+    const { error: insertError } = await supabase.from('schedules').insert({
+      title: title || file.name,
+      file_path: filePath,
+      file_url: urlData.publicUrl,
+      uploaded_by: profile.id,
+    })
+    if (insertError) {
+      setError(insertError.message)
+    } else {
+      setTitle('')
+      setFile(null)
+      setShowForm(false)
+      load()
+    }
+    setUploading(false)
+  }
+
+  const handleDelete = async (item) => {
+    if (!confirm(`Remove "${item.title}"?`)) return
+    await supabase.storage.from('schedules').remove([item.file_path])
+    const { error } = await supabase.from('schedules').delete().eq('id', item.id)
+    if (error) setError(error.message)
+    else load()
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <div>
+          <h1>Schedule</h1>
+          <p className="subtitle">The RCIA session schedule, as a downloadable PDF</p>
+        </div>
+        {canUpload && (
+          <button className="btn" onClick={() => setShowForm((s) => !s)}>
+            {showForm ? 'Cancel' : '+ Upload Schedule'}
+          </button>
+        )}
+      </div>
+
+      {error && <div className="error-msg">{error}</div>}
+
+      {showForm && (
+        <form className="card" onSubmit={handleUpload}>
+          <label>Title</label>
+          <input
+            type="text"
+            placeholder="e.g. RCIA Schedule 2026"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <label>PDF file</label>
+          <input
+            type="file"
+            accept="application/pdf"
+            required
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+          <button className="btn gold" type="submit" disabled={uploading || !file}>
+            {uploading ? 'Uploading…' : 'Upload'}
+          </button>
+        </form>
+      )}
+
+      {loading ? (
+        <p>Loading…</p>
+      ) : items.length === 0 ? (
+        <div className="empty-state card">
+          <h3>No schedule uploaded yet</h3>
+          <p>Once Admin uploads a schedule PDF, it will appear here.</p>
+        </div>
+      ) : (
+        items.map((item) => (
+          <div className="card" key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <h3 style={{ marginBottom: 4 }}>{item.title}</h3>
+              <span style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
+                Uploaded {new Date(item.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                {item.profiles?.full_name ? ` by ${item.profiles.full_name}` : ''}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <a className="btn gold small" href={item.file_url} target="_blank" rel="noreferrer">
+                View / Download PDF
+              </a>
+              {canUpload && (
+                <button className="btn danger small" onClick={() => handleDelete(item)}>Delete</button>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  )
+}

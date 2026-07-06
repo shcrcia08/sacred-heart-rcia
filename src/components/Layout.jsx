@@ -31,6 +31,9 @@ export default function Layout() {
           <NavLink to="/dates" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
             Important Dates
           </NavLink>
+          <NavLink to="/schedule" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+            Schedule
+          </NavLink>
 
           {session && (
             <NavLink to="/attendance" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>

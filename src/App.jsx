@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Announcements from './pages/Announcements'
 import ImportantDates from './pages/ImportantDates'
+import Schedule from './pages/Schedule'
 import Attendance from './pages/Attendance'
 import People from './pages/People'
 import Users from './pages/Users'
@@ -53,6 +54,7 @@ export default function App() {
         {/* Public: no login required, so WhatsApp links open straight to content */}
         <Route index element={<Announcements />} />
         <Route path="dates" element={<ImportantDates />} />
+        <Route path="schedule" element={<Schedule />} />
 
         {/* Requires an account */}
         <Route path="attendance" element={<RequireAuth><Attendance /></RequireAuth>} />

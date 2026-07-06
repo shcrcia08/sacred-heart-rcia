@@ -11,7 +11,7 @@ const ROLE_LABELS = {
 
 export default function Attendance() {
   const { profile, role } = useAuth()
-  const isManager = role === 'admin' || role === 'core_team'
+  const isAdmin = role === 'admin'
 
   return (
     <div>
@@ -24,10 +24,13 @@ export default function Attendance() {
 
       <MyAttendance profile={profile} />
 
-      {isManager && (
+      {isAdmin && (
         <>
+          <div className="divider-heart">Dashboard</div>
+          <AbsenceDashboard />
+
           <div className="divider-heart">Session Management</div>
-          <ManagerView isAdmin={role === 'admin'} />
+          <ManagerView isAdmin={isAdmin} />
         </>
       )}
     </div>
@@ -132,6 +135,92 @@ function MyAttendance({ profile }) {
             )
           })}
         </div>
+      )}
+    </div>
+  )
+}
+
+// ---------- Admin only: absence dashboard ----------
+
+function AbsenceDashboard() {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [totalAbsences, setTotalAbsences] = useState(0)
+  const [sessionsHeld, setSessionsHeld] = useState(0)
+  const [breakdown, setBreakdown] = useState([])
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      const today = new Date().toISOString().slice(0, 10)
+      const [{ data: absentRows, error: aErr }, { data: profileRows, error: pErr }, { count: sessionCount, error: sErr }] = await Promise.all([
+        supabase.from('attendance').select('person_id').eq('status', 'absent'),
+        supabase.from('profiles').select('id, full_name, role'),
+        supabase.from('important_dates').select('id', { count: 'exact', head: true }).eq('is_session', true).lte('event_date', today),
+      ])
+      if (aErr) setError(aErr.message)
+      if (pErr) setError(pErr.message)
+      if (sErr) setError(sErr.message)
+
+      if (absentRows) {
+        setTotalAbsences(absentRows.length)
+        const counts = {}
+        absentRows.forEach((r) => { counts[r.person_id] = (counts[r.person_id] ?? 0) + 1 })
+        const profileMap = {}
+        ;(profileRows ?? []).forEach((p) => { profileMap[p.id] = p })
+        const rows = Object.entries(counts)
+          .map(([personId, count]) => ({
+            id: personId,
+            full_name: profileMap[personId]?.full_name ?? 'Unknown',
+            role: profileMap[personId]?.role ?? '—',
+            count,
+          }))
+          .sort((a, b) => b.count - a.count)
+        setBreakdown(rows)
+      }
+      setSessionsHeld(sessionCount ?? 0)
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  return (
+    <div className="card">
+      {error && <div className="error-msg">{error}</div>}
+      {loading ? (
+        <p>Loading…</p>
+      ) : (
+        <>
+          <div style={{ display: 'flex', gap: 30, flexWrap: 'wrap', marginBottom: 18 }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: 'var(--ink)' }}>{totalAbsences}</div>
+              <div style={{ color: 'var(--ink-soft)', fontSize: '0.85rem' }}>Total absences marked to date</div>
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: 'var(--ink)' }}>{sessionsHeld}</div>
+              <div style={{ color: 'var(--ink-soft)', fontSize: '0.85rem' }}>Sessions held so far</div>
+            </div>
+          </div>
+
+          {breakdown.length === 0 ? (
+            <p style={{ color: 'var(--ink-soft)' }}>No absences recorded yet.</p>
+          ) : (
+            <div className="scroll-table">
+              <table>
+                <thead><tr><th>Name</th><th>Role</th><th>Absences</th></tr></thead>
+                <tbody>
+                  {breakdown.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.full_name}</td>
+                      <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
+                      <td>{p.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

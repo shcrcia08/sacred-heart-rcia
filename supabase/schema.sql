@@ -264,16 +264,16 @@ create policy "pairs_write" on sponsor_catechumen for insert
 create policy "pairs_delete" on sponsor_catechumen for delete
   using (get_my_role() in ('admin','core_team'));
 
--- attendance: Admin/Core Team can see and manage everything; a Sponsor or
--- Catechumen can only see and mark their own record.
+-- attendance: Admin can see and manage everything; a Sponsor, Catechumen,
+-- or Core Team member can only see and mark their own record.
 create policy "attendance_select_own" on attendance for select
-  using (person_id = auth.uid() or get_my_role() in ('admin','core_team'));
+  using (person_id = auth.uid() or get_my_role() = 'admin');
 
 create policy "attendance_insert_own" on attendance for insert
-  with check (person_id = auth.uid() or get_my_role() in ('admin','core_team'));
+  with check (person_id = auth.uid() or get_my_role() = 'admin');
 
 create policy "attendance_update_own" on attendance for update
-  using (person_id = auth.uid() or get_my_role() in ('admin','core_team'));
+  using (person_id = auth.uid() or get_my_role() = 'admin');
 
 -- ============================================================
 -- After running this file, promote your first Admin:

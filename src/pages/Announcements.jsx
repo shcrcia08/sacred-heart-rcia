@@ -12,7 +12,7 @@ function buildWhatsAppLink(title, body) {
 
 export default function Announcements() {
   const { profile, role } = useAuth()
-  const canPost = role === 'admin' || role === 'core_team'
+  const canPost = role === 'admin'
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)

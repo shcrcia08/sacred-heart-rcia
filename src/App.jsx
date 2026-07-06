@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Announcements from './pages/Announcements'
 import ImportantDates from './pages/ImportantDates'
 import Schedule from './pages/Schedule'
+import Archive from './pages/Archive'
 import Attendance from './pages/Attendance'
 import People from './pages/People'
 import Users from './pages/Users'
@@ -55,6 +56,7 @@ export default function App() {
         <Route index element={<Announcements />} />
         <Route path="dates" element={<ImportantDates />} />
         <Route path="schedule" element={<Schedule />} />
+        <Route path="archive" element={<Archive />} />
 
         {/* Requires an account */}
         <Route path="attendance" element={<RequireAuth><Attendance /></RequireAuth>} />

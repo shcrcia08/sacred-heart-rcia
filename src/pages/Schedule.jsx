@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { useCurrentCycle } from '../hooks/useCurrentCycle'
 
 export default function Schedule() {
   const { profile, role } = useAuth()
+  const { cycle } = useCurrentCycle()
   const canUpload = role === 'admin'
 
   const [items, setItems] = useState([])
@@ -16,16 +18,18 @@ export default function Schedule() {
 
   const load = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    let query = supabase
       .from('schedules')
       .select('*, profiles:uploaded_by(full_name)')
       .order('created_at', { ascending: false })
+    if (cycle) query = query.eq('cycle_id', cycle.id)
+    const { data, error } = await query
     if (error) setError(error.message)
     else setItems(data)
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [cycle?.id])
 
   const handleUpload = async (e) => {
     e.preventDefault()
@@ -50,6 +54,7 @@ export default function Schedule() {
       title: title || file.name,
       file_path: filePath,
       file_url: urlData.publicUrl,
+      cycle_id: cycle?.id ?? null,
       uploaded_by: profile.id,
     })
     if (insertError) {

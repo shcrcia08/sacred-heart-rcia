@@ -47,7 +47,13 @@ export default function Users() {
     setSavingCycle(false)
   }
 
-  const handleSetCurrent = async (id) => {
+  const handleSetCurrent = async (id, label) => {
+    const confirmed = confirm(
+      `Set "${label}" as the current cycle?\n\n` +
+      `This will archive all current announcements and schedule PDFs under the previous cycle. ` +
+      `They won't be deleted — they'll move to the Archive page, and only new posts will show on the main pages from now on.`
+    )
+    if (!confirmed) return
     const { error } = await supabase.from('cycles').update({ is_current: true }).eq('id', id)
     if (error) setError(error.message)
     else load()
@@ -111,7 +117,7 @@ export default function Users() {
                   </td>
                   <td style={{ display: 'flex', gap: 8 }}>
                     {!c.is_current && (
-                      <button className="btn secondary small" onClick={() => handleSetCurrent(c.id)}>Set as Current</button>
+                      <button className="btn secondary small" onClick={() => handleSetCurrent(c.id, c.label)}>Set as Current</button>
                     )}
                     <button className="btn danger small" onClick={() => handleDeleteCycle(c.id)}>Delete</button>
                   </td>

@@ -29,6 +29,7 @@ create table if not exists announcements (
   attachment_url text,
   attachment_name text,
   attachment_type text,
+  cycle_id uuid references cycles(id),
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -56,6 +57,7 @@ create table if not exists schedules (
   title text not null,
   file_path text not null,
   file_url text not null,
+  cycle_id uuid references cycles(id),
   uploaded_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -145,6 +147,9 @@ as $$
 begin
   if new.is_current then
     update cycles set is_current = false where id <> new.id;
+    -- fold in anything created before cycles existed, so nothing is lost
+    update announcements set cycle_id = new.id where cycle_id is null;
+    update schedules set cycle_id = new.id where cycle_id is null;
   end if;
   return new;
 end;

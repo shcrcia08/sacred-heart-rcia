@@ -8,6 +8,26 @@ import Attendance from './pages/Attendance'
 import People from './pages/People'
 import Users from './pages/Users'
 
+// Wraps a route that requires the person to be signed in at all.
+function RequireAuth({ children }) {
+  const { session, profile, loading } = useAuth()
+  if (loading) return <p>Loading…</p>
+  if (!session) return <Navigate to="/login" replace />
+  if (!profile) {
+    return (
+      <div className="card">
+        <h3>Setting up your account…</h3>
+        <p>
+          If you just registered, check your email to confirm your account
+          (if required), then sign in again. If this persists, contact an Admin.
+        </p>
+      </div>
+    )
+  }
+  return children
+}
+
+// Wraps a route that additionally requires a specific role.
 function RequireRole({ allowed, children }) {
   const { role } = useAuth()
   if (!allowed.includes(role)) return <Navigate to="/" replace />
@@ -15,7 +35,7 @@ function RequireRole({ allowed, children }) {
 }
 
 export default function App() {
-  const { session, profile, loading } = useAuth()
+  const { loading, session } = useAuth()
 
   if (loading) {
     return (
@@ -25,33 +45,26 @@ export default function App() {
     )
   }
 
-  if (!session) return <Login />
-
-  if (!profile) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'sans-serif', flexDirection: 'column', gap: 12 }}>
-        <p>We couldn't find a profile for your account.</p>
-        <p style={{ color: '#6B5D4F', fontSize: '0.9rem' }}>
-          If you just signed up, check your email to confirm your account, then sign in again.
-        </p>
-      </div>
-    )
-  }
-
   return (
     <Routes>
+      <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
+
       <Route path="/" element={<Layout />}>
+        {/* Public: no login required, so WhatsApp links open straight to content */}
         <Route index element={<Announcements />} />
         <Route path="dates" element={<ImportantDates />} />
-        <Route path="attendance" element={<Attendance />} />
+
+        {/* Requires an account */}
+        <Route path="attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
         <Route
           path="people"
-          element={<RequireRole allowed={['admin', 'core_team']}><People /></RequireRole>}
+          element={<RequireAuth><RequireRole allowed={['admin', 'core_team']}><People /></RequireRole></RequireAuth>}
         />
         <Route
           path="users"
-          element={<RequireRole allowed={['admin']}><Users /></RequireRole>}
+          element={<RequireAuth><RequireRole allowed={['admin']}><Users /></RequireRole></RequireAuth>}
         />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

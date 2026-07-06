@@ -9,7 +9,8 @@ function buildWhatsAppLink(item) {
   const message =
     `📅 *Sacred Heart RCIA — Save the Date*\n\n` +
     `*${item.title}*\n${dateStr}${item.location ? `\n📍 ${item.location}` : ''}\n\n` +
-    `${item.description ?? ''}\n\n— Sent from the RCIA Ministry Portal`
+    `${item.description ?? ''}\n\n` +
+    `View this and other dates anytime, no login needed:\n${window.location.origin}/dates`
   return `https://wa.me/?text=${encodeURIComponent(message)}`
 }
 

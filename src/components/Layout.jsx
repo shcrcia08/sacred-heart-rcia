@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { SacredHeartMark } from './SacredHeartMark'
 
@@ -10,7 +10,7 @@ const ROLE_LABELS = {
 }
 
 export default function Layout() {
-  const { profile, role, signOut } = useAuth()
+  const { session, profile, role, signOut } = useAuth()
 
   const canManage = role === 'admin' || role === 'core_team'
 
@@ -32,9 +32,12 @@ export default function Layout() {
           <NavLink to="/dates" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
             Important Dates
           </NavLink>
-          <NavLink to="/attendance" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
-            Attendance
-          </NavLink>
+
+          {session && (
+            <NavLink to="/attendance" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+              Attendance
+            </NavLink>
+          )}
           {canManage && (
             <NavLink to="/people" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
               Sponsors &amp; Catechumens
@@ -48,11 +51,24 @@ export default function Layout() {
         </div>
 
         <div className="sidebar-footer">
-          <div>{profile?.full_name}</div>
-          <span className={`role-badge role-${role}`}>{ROLE_LABELS[role] ?? role}</span>
-          <div>
-            <button className="sign-out-btn" onClick={signOut}>Sign Out</button>
-          </div>
+          {session ? (
+            <>
+              <div>{profile?.full_name}</div>
+              {role && <span className={`role-badge role-${role}`}>{ROLE_LABELS[role] ?? role}</span>}
+              <div>
+                <button className="sign-out-btn" onClick={signOut}>Sign Out</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: '0.85rem', opacity: 0.85, marginBottom: 8 }}>
+                Viewing as a guest. Sign in to mark your attendance.
+              </div>
+              <Link to="/login" className="btn gold small" style={{ width: '100%', justifyContent: 'center' }}>
+                Sign In / Register
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 

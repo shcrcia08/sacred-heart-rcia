@@ -58,6 +58,7 @@ returns text
 language sql
 security definer
 stable
+set search_path = public
 as $$
   select role from profiles where id = auth.uid();
 $$;
@@ -70,6 +71,7 @@ create or replace function handle_new_user()
 returns trigger
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
   insert into profiles (id, full_name, phone, role)
@@ -98,6 +100,7 @@ create or replace function prevent_role_self_escalation()
 returns trigger
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
   if new.role <> old.role and get_my_role() <> 'admin' then
@@ -132,9 +135,10 @@ create policy "profiles_update_admin" on profiles for update
 create policy "profiles_update_self" on profiles for update
   using (id = auth.uid());
 
--- announcements: everyone can read; only Admin/Core Team can write.
+-- announcements: anyone (including logged-out visitors, e.g. from a WhatsApp
+-- link) can read; only Admin/Core Team can write.
 create policy "announcements_select" on announcements for select
-  using (auth.role() = 'authenticated');
+  using (true);
 
 create policy "announcements_write" on announcements for insert
   with check (get_my_role() in ('admin','core_team'));
@@ -145,9 +149,10 @@ create policy "announcements_update" on announcements for update
 create policy "announcements_delete" on announcements for delete
   using (get_my_role() in ('admin','core_team'));
 
--- important_dates: everyone can read; only Admin/Core Team can write.
+-- important_dates: anyone (including logged-out visitors) can read; only
+-- Admin/Core Team can write.
 create policy "dates_select" on important_dates for select
-  using (auth.role() = 'authenticated');
+  using (true);
 
 create policy "dates_write" on important_dates for insert
   with check (get_my_role() in ('admin','core_team'));

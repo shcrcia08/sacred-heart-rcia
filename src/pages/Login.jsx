@@ -108,6 +108,10 @@ export default function Login() {
             </button>
           </form>
         )}
+
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <a href="/" style={{ fontSize: '0.85rem' }}>← Back to Announcements</a>
+        </div>
       </div>
     </div>
   )

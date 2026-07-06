@@ -6,7 +6,7 @@ function buildWhatsAppLink(title, body) {
   const message =
     `📢 *Sacred Heart RCIA — Announcement*\n\n` +
     `*${title}*\n\n${body}\n\n` +
-    `— Sent from the RCIA Ministry Portal`
+    `View this and other updates anytime, no login needed:\n${window.location.origin}`
   return `https://wa.me/?text=${encodeURIComponent(message)}`
 }
 

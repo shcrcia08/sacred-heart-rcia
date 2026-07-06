@@ -19,6 +19,9 @@ create table if not exists announcements (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   body text not null,
+  attachment_url text,
+  attachment_name text,
+  attachment_type text,
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -225,3 +228,18 @@ create policy "schedule_files_insert_admin" on storage.objects for insert
 
 create policy "schedule_files_delete_admin" on storage.objects for delete
   using (bucket_id = 'schedules' and get_my_role() = 'admin');
+
+-- ---------- Announcement attachments (images/documents) ----------
+
+insert into storage.buckets (id, name, public)
+values ('announcements', 'announcements', true)
+on conflict (id) do nothing;
+
+create policy "announcement_files_select" on storage.objects for select
+  using (bucket_id = 'announcements');
+
+create policy "announcement_files_insert" on storage.objects for insert
+  with check (bucket_id = 'announcements' and get_my_role() in ('admin','core_team'));
+
+create policy "announcement_files_delete" on storage.objects for delete
+  using (bucket_id = 'announcements' and get_my_role() in ('admin','core_team'));

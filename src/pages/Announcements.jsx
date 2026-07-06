@@ -20,6 +20,7 @@ export default function Announcements() {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
+  const [file, setFile] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
@@ -39,9 +40,31 @@ export default function Announcements() {
     e.preventDefault()
     setSaving(true)
     setError('')
+
+    let attachment_url = null
+    let attachment_name = null
+    let attachment_type = null
+
+    if (file) {
+      const filePath = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`
+      const { error: uploadError } = await supabase.storage.from('announcements').upload(filePath, file)
+      if (uploadError) {
+        setError(uploadError.message)
+        setSaving(false)
+        return
+      }
+      const { data: urlData } = supabase.storage.from('announcements').getPublicUrl(filePath)
+      attachment_url = urlData.publicUrl
+      attachment_name = file.name
+      attachment_type = file.type
+    }
+
     const { error } = await supabase.from('announcements').insert({
       title,
       body,
+      attachment_url,
+      attachment_name,
+      attachment_type,
       created_by: profile.id,
     })
     if (error) {
@@ -49,6 +72,7 @@ export default function Announcements() {
     } else {
       setTitle('')
       setBody('')
+      setFile(null)
       setShowForm(false)
       load()
     }
@@ -84,6 +108,12 @@ export default function Announcements() {
           <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} />
           <label>Message</label>
           <textarea required value={body} onChange={(e) => setBody(e.target.value)} rows={4} />
+          <label>Attach a picture or document (optional)</label>
+          <input
+            type="file"
+            accept="image/*,.pdf,.doc,.docx,.xlsx,.pptx"
+            onChange={(e) => setFile(e.target.files[0] ?? null)}
+          />
           <button className="btn gold" type="submit" disabled={saving}>
             {saving ? 'Posting…' : 'Post Announcement'}
           </button>
@@ -107,6 +137,25 @@ export default function Announcements() {
               </span>
             </div>
             <p style={{ whiteSpace: 'pre-wrap' }}>{item.body}</p>
+
+            {item.attachment_url && (
+              <div style={{ margin: '10px 0' }}>
+                {item.attachment_type?.startsWith('image/') ? (
+                  <a href={item.attachment_url} target="_blank" rel="noreferrer">
+                    <img
+                      src={item.attachment_url}
+                      alt={item.attachment_name ?? 'Attachment'}
+                      style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 8, border: '1px solid var(--line)' }}
+                    />
+                  </a>
+                ) : (
+                  <a className="btn secondary small" href={item.attachment_url} target="_blank" rel="noreferrer">
+                    📎 {item.attachment_name ?? 'Download attachment'}
+                  </a>
+                )}
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
                 Posted by {item.profiles?.full_name ?? 'Core Team'}

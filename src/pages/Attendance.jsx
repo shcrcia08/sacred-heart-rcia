@@ -6,12 +6,30 @@ export default function Attendance() {
   const { profile, role } = useAuth()
   const isManager = role === 'admin' || role === 'core_team'
 
-  return isManager ? <ManagerView isAdmin={role === 'admin'} /> : <SelfServiceView profile={profile} />
+  return (
+    <div>
+      <div className="page-header">
+        <div>
+          <h1>Attendance</h1>
+          <p className="subtitle">RCIA runs every Monday (except public holidays)</p>
+        </div>
+      </div>
+
+      <MyAttendance profile={profile} />
+
+      {isManager && (
+        <>
+          <div className="divider-heart">Session Management</div>
+          <ManagerView isAdmin={role === 'admin'} />
+        </>
+      )}
+    </div>
+  )
 }
 
-// ---------- Sponsors / Catechumens: mark own absence ----------
+// ---------- Everyone: mark own absence ----------
 
-function SelfServiceView({ profile }) {
+function MyAttendance({ profile }) {
   const [dates, setDates] = useState([])
   const [myRecords, setMyRecords] = useState({})
   const [loading, setLoading] = useState(true)
@@ -59,13 +77,6 @@ function SelfServiceView({ profile }) {
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <h1>Attendance</h1>
-          <p className="subtitle">Let Admin know if you'll be away for an upcoming RCIA session</p>
-        </div>
-      </div>
-
       {error && <div className="error-msg">{error}</div>}
 
       {loading ? (
@@ -117,7 +128,7 @@ function SelfServiceView({ profile }) {
   )
 }
 
-// ---------- Admin / Core Team: roll-up + session management ----------
+// ---------- Admin / Core Team: session tools + roll-up ----------
 
 function ManagerView({ isAdmin }) {
   const [dates, setDates] = useState([])
@@ -135,7 +146,7 @@ function ManagerView({ isAdmin }) {
   // bulk weekly generator
   const [rangeStart, setRangeStart] = useState('')
   const [rangeEnd, setRangeEnd] = useState('')
-  const [preview, setPreview] = useState(null) // [{date, include}]
+  const [preview, setPreview] = useState(null)
   const [creatingBulk, setCreatingBulk] = useState(false)
 
   const loadSessions = async () => {
@@ -176,7 +187,6 @@ function ManagerView({ isAdmin }) {
 
   const absentCount = people.filter((p) => records[p.id]?.status === 'absent').length
 
-  // ----- single session -----
   const handleAddSingle = async (e) => {
     e.preventDefault()
     if (!singleDate) return
@@ -195,13 +205,12 @@ function ManagerView({ isAdmin }) {
     setAddingSingle(false)
   }
 
-  // ----- bulk generator -----
   const buildMondays = (startStr, endStr) => {
     const start = new Date(startStr + 'T00:00:00')
     const end = new Date(endStr + 'T00:00:00')
     const mondays = []
     const cursor = new Date(start)
-    const day = cursor.getDay() // 0=Sun ... 1=Mon
+    const day = cursor.getDay()
     const diffToMonday = (8 - day) % 7
     cursor.setDate(cursor.getDate() + diffToMonday)
     while (cursor <= end) {
@@ -257,13 +266,6 @@ function ManagerView({ isAdmin }) {
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <h1>Attendance</h1>
-          <p className="subtitle">RCIA runs every Monday (except public holidays) — track who's marked away</p>
-        </div>
-      </div>
-
       {error && <div className="error-msg">{error}</div>}
 
       {isAdmin && (

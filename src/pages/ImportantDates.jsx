@@ -16,7 +16,7 @@ function buildWhatsAppLink(item) {
 
 export default function ImportantDates() {
   const { profile, role } = useAuth()
-  const canManage = role === 'admin' || role === 'core_team'
+  const canManage = role === 'admin'
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)

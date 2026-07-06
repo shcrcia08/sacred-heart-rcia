@@ -23,6 +23,8 @@ export default function Groups() {
 
   const [newGroupName, setNewGroupName] = useState('')
   const [creatingGroup, setCreatingGroup] = useState(false)
+  const [editingGroupId, setEditingGroupId] = useState(null)
+  const [editName, setEditName] = useState('')
 
   // per-group "add person" draft state, keyed by group id
   const [addDrafts, setAddDrafts] = useState({})
@@ -64,6 +66,21 @@ export default function Groups() {
     const { error } = await supabase.from('groups').delete().eq('id', id)
     if (error) setError(error.message)
     else load()
+  }
+
+  const startRename = (g) => {
+    setEditingGroupId(g.id)
+    setEditName(g.name)
+  }
+
+  const handleRename = async (id) => {
+    if (!editName.trim()) return
+    const { error } = await supabase.from('groups').update({ name: editName.trim() }).eq('id', id)
+    if (error) setError(error.message)
+    else {
+      setEditingGroupId(null)
+      load()
+    }
   }
 
   const handleAddMember = async (groupId) => {
@@ -144,10 +161,26 @@ export default function Groups() {
 
           return (
             <div className="card" key={g.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-                <h3 style={{ marginBottom: 0 }}>{g.name}</h3>
-                {isAdmin && (
-                  <button className="btn danger small" onClick={() => handleDeleteGroup(g.id)}>Delete Group</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
+                {editingGroupId === g.id ? (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      style={{ marginBottom: 0 }}
+                    />
+                    <button className="btn gold small" onClick={() => handleRename(g.id)}>Save</button>
+                    <button className="btn secondary small" onClick={() => setEditingGroupId(null)}>Cancel</button>
+                  </div>
+                ) : (
+                  <h3 style={{ marginBottom: 0 }}>{g.name}</h3>
+                )}
+                {isAdmin && editingGroupId !== g.id && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn secondary small" onClick={() => startRename(g)}>Rename</button>
+                    <button className="btn danger small" onClick={() => handleDeleteGroup(g.id)}>Delete Group</button>
+                  </div>
                 )}
               </div>
 

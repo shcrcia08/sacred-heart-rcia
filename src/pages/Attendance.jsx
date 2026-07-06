@@ -12,6 +12,7 @@ const ROLE_LABELS = {
 export default function Attendance() {
   const { profile, role } = useAuth()
   const isAdmin = role === 'admin'
+  const isCoreTeam = role === 'core_team'
 
   return (
     <div>
@@ -31,6 +32,13 @@ export default function Attendance() {
 
           <div className="divider-heart">Session Management</div>
           <ManagerView isAdmin={isAdmin} />
+        </>
+      )}
+
+      {isCoreTeam && (
+        <>
+          <div className="divider-heart">Attendance by Session</div>
+          <ManagerView isAdmin={false} />
         </>
       )}
     </div>
@@ -278,6 +286,24 @@ function ManagerView({ isAdmin }) {
   const [preview, setPreview] = useState(null)
   const [creatingBulk, setCreatingBulk] = useState(false)
 
+  const [groupMap, setGroupMap] = useState({}) // person_id -> group name
+  const [groupOrder, setGroupOrder] = useState([]) // group names in creation order
+
+  const loadGroups = async () => {
+    const [{ data: groupRows }, { data: memberRows }] = await Promise.all([
+      supabase.from('groups').select('*').order('name'),
+      supabase.from('group_members').select('group_id, person_id'),
+    ])
+    const groupNameById = {}
+    ;(groupRows ?? []).forEach((g) => { groupNameById[g.id] = g.name })
+    const map = {}
+    ;(memberRows ?? []).forEach((m) => {
+      if (!(m.person_id in map)) map[m.person_id] = groupNameById[m.group_id] ?? 'Ungrouped'
+    })
+    setGroupMap(map)
+    setGroupOrder((groupRows ?? []).map((g) => g.name))
+  }
+
   const loadSessions = async () => {
     const { data, error } = await supabase
       .from('important_dates')
@@ -293,6 +319,7 @@ function ManagerView({ isAdmin }) {
 
   useEffect(() => {
     loadSessions().finally(() => setLoading(false))
+    loadGroups()
   }, [])
 
   const loadRollup = async () => {
@@ -530,34 +557,53 @@ function ManagerView({ isAdmin }) {
           <div className="scroll-table">
             <table>
               <thead>
-                <tr><th>Name</th><th>Role</th><th>Status</th><th>Reason</th><th></th></tr>
+                <tr>
+                  <th>Name</th><th>Role</th><th>Status</th><th>Reason</th>{isAdmin && <th></th>}
+                </tr>
               </thead>
               <tbody>
-                {people.map((p) => {
-                  const rec = records[p.id]
-                  const status = rec?.status ?? 'present'
+                {[...groupOrder, 'Ungrouped'].map((groupName) => {
+                  const groupPeople = people.filter((p) => (groupMap[p.id] ?? 'Ungrouped') === groupName)
+                  if (groupPeople.length === 0) return null
                   return (
-                    <tr key={p.id}>
-                      <td>{p.full_name}</td>
-                      <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
-                      <td><span className={`status-pill status-${status}`}>{status === 'absent' ? 'Absent' : 'Attending'}</span></td>
-                      <td>{rec?.note || '—'}</td>
-                      <td>
-                        {status === 'absent' ? (
-                          <button className="btn secondary small" onClick={() => handleOverridePresent(p.id)}>Mark Present</button>
-                        ) : (
-                          <button className="btn danger small" onClick={() => handleOverrideAbsent(p.id)}>Mark Absent</button>
-                        )}
-                      </td>
-                    </tr>
+                    <Fragment key={groupName}>
+                      <tr>
+                        <td colSpan={isAdmin ? 5 : 4} style={{ background: 'var(--parchment-dim, #F0EDE4)', fontWeight: 700, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.03em', color: 'var(--ink-soft)' }}>
+                          {groupName}
+                        </td>
+                      </tr>
+                      {groupPeople.map((p) => {
+                        const rec = records[p.id]
+                        const status = rec?.status ?? 'present'
+                        return (
+                          <tr key={p.id}>
+                            <td>{p.full_name}</td>
+                            <td><span className={`role-badge role-${p.role}`}>{ROLE_LABELS[p.role] ?? p.role}</span></td>
+                            <td><span className={`status-pill status-${status}`}>{status === 'absent' ? 'Absent' : 'Attending'}</span></td>
+                            <td>{rec?.note || '—'}</td>
+                            {isAdmin && (
+                              <td>
+                                {status === 'absent' ? (
+                                  <button className="btn secondary small" onClick={() => handleOverridePresent(p.id)}>Mark Present</button>
+                                ) : (
+                                  <button className="btn danger small" onClick={() => handleOverrideAbsent(p.id)}>Mark Absent</button>
+                                )}
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      })}
+                    </Fragment>
                   )
                 })}
               </tbody>
             </table>
           </div>
-          <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
-            As Admin, you can mark or correct attendance on someone's behalf if they haven't done it themselves.
-          </p>
+          {isAdmin && (
+            <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
+              As Admin, you can mark or correct attendance on someone's behalf if they haven't done it themselves.
+            </p>
+          )}
         </div>
       )}
     </div>

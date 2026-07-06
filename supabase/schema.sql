@@ -310,10 +310,11 @@ create policy "group_members_update_admin" on group_members for update
 create policy "group_members_delete_admin" on group_members for delete
   using (get_my_role() = 'admin');
 
--- attendance: Admin can see and manage everything; a Sponsor, Catechumen,
--- or Core Team member can only see and mark their own record.
+-- attendance: Admin can see and manage everything; Core Team can view
+-- everyone's attendance (read-only); a Sponsor or Catechumen can only see
+-- and mark their own record.
 create policy "attendance_select_own" on attendance for select
-  using (person_id = auth.uid() or get_my_role() = 'admin');
+  using (person_id = auth.uid() or get_my_role() in ('admin', 'core_team'));
 
 create policy "attendance_insert_own" on attendance for insert
   with check (person_id = auth.uid() or get_my_role() = 'admin');

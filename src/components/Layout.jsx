@@ -42,9 +42,6 @@ export default function Layout() {
             <NavLink to="/schedule" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
               Schedule
             </NavLink>
-            <NavLink to="/archive" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
-              Archive
-            </NavLink>
 
             {session && (
               <NavLink to="/attendance" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
@@ -59,6 +56,11 @@ export default function Layout() {
             {role === 'admin' && (
               <NavLink to="/users" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
                 Administrator
+              </NavLink>
+            )}
+            {role === 'admin' && (
+              <NavLink to="/archive" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+                Archive
               </NavLink>
             )}
 

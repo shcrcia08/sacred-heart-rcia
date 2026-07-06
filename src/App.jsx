@@ -56,7 +56,10 @@ export default function App() {
         <Route index element={<Announcements />} />
         <Route path="dates" element={<ImportantDates />} />
         <Route path="schedule" element={<Schedule />} />
-        <Route path="archive" element={<Archive />} />
+        <Route
+          path="archive"
+          element={<RequireAuth><RequireRole allowed={['admin']}><Archive /></RequireRole></RequireAuth>}
+        />
 
         {/* Requires an account */}
         <Route path="attendance" element={<RequireAuth><Attendance /></RequireAuth>} />

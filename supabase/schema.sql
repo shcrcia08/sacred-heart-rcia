@@ -84,6 +84,16 @@ as $$
   select role from profiles where id = auth.uid();
 $$;
 
+create or replace function get_current_cycle_id()
+returns uuid
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select id from cycles where is_current = true limit 1;
+$$;
+
 -- ---------- Auto-create profile row on signup ----------
 -- Reads full_name / phone / role out of the signUp() metadata payload.
 -- This runs with elevated privileges regardless of email-confirmation settings.
@@ -184,10 +194,15 @@ create policy "profiles_update_admin" on profiles for update
 create policy "profiles_update_self" on profiles for update
   using (id = auth.uid());
 
--- announcements: anyone (including logged-out visitors, e.g. from a WhatsApp
--- link) can read; only Admin can write.
+-- announcements: current-cycle items are visible to everyone (including
+-- logged-out visitors); items from past (archived) cycles are visible only
+-- to Admin. Only Admin can write.
 create policy "announcements_select" on announcements for select
-  using (true);
+  using (
+    cycle_id is null
+    or cycle_id = get_current_cycle_id()
+    or get_my_role() = 'admin'
+  );
 
 drop policy if exists "announcements_write" on announcements;
 create policy "announcements_write" on announcements for insert
@@ -246,9 +261,14 @@ create policy "attendance_update_own" on attendance for update
 
 -- ---------- Schedule PDFs ----------
 
--- schedules: anyone can read; only Admin can upload/remove.
+-- schedules: current-cycle PDFs are visible to everyone; archived (past
+-- cycle) PDFs are visible only to Admin. Only Admin can upload/remove.
 create policy "schedules_select" on schedules for select
-  using (true);
+  using (
+    cycle_id is null
+    or cycle_id = get_current_cycle_id()
+    or get_my_role() = 'admin'
+  );
 
 create policy "schedules_insert_admin" on schedules for insert
   with check (get_my_role() = 'admin');

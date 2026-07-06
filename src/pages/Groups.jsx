@@ -16,18 +16,10 @@ export default function Groups() {
   const isAdmin = role === 'admin'
 
   const [groups, setGroups] = useState([])
-  const [members, setMembers] = useState([]) // all group_members rows, joined with profile
+  const [members, setMembers] = useState([])
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
-  const [newGroupName, setNewGroupName] = useState('')
-  const [creatingGroup, setCreatingGroup] = useState(false)
-  const [editingGroupId, setEditingGroupId] = useState(null)
-  const [editName, setEditName] = useState('')
-
-  // per-group "add person" draft state, keyed by group id
-  const [addDrafts, setAddDrafts] = useState({})
 
   const load = async () => {
     setLoading(true)
@@ -47,18 +39,13 @@ export default function Groups() {
 
   useEffect(() => { load() }, [])
 
-  const handleCreateGroup = async (e) => {
-    e.preventDefault()
-    if (!newGroupName.trim()) return
-    setCreatingGroup(true)
-    setError('')
-    const { error } = await supabase.from('groups').insert({ name: newGroupName.trim() })
+  // ---- shared handlers, used by both Groups and Sub-Ministries sections ----
+
+  const handleCreateGroup = async (name, groupType) => {
+    if (!name.trim()) return
+    const { error } = await supabase.from('groups').insert({ name: name.trim(), group_type: groupType })
     if (error) setError(error.message)
-    else {
-      setNewGroupName('')
-      load()
-    }
-    setCreatingGroup(false)
+    else load()
   }
 
   const handleDeleteGroup = async (id) => {
@@ -68,34 +55,22 @@ export default function Groups() {
     else load()
   }
 
-  const startRename = (g) => {
-    setEditingGroupId(g.id)
-    setEditName(g.name)
-  }
-
-  const handleRename = async (id) => {
-    if (!editName.trim()) return
-    const { error } = await supabase.from('groups').update({ name: editName.trim() }).eq('id', id)
+  const handleRename = async (id, newName) => {
+    if (!newName.trim()) return
+    const { error } = await supabase.from('groups').update({ name: newName.trim() }).eq('id', id)
     if (error) setError(error.message)
-    else {
-      setEditingGroupId(null)
-      load()
-    }
+    else load()
   }
 
-  const handleAddMember = async (groupId) => {
-    const draft = addDrafts[groupId]
-    if (!draft?.personId) return
+  const handleAddMember = async (groupId, personId, groupRole) => {
+    if (!personId) return
     const { error } = await supabase.from('group_members').insert({
       group_id: groupId,
-      person_id: draft.personId,
-      group_role: draft.groupRole || 'member',
+      person_id: personId,
+      group_role: groupRole || 'member',
     })
     if (error) setError(error.message)
-    else {
-      setAddDrafts((prev) => ({ ...prev, [groupId]: { personId: '', groupRole: 'member' } }))
-      load()
-    }
+    else load()
   }
 
   const handleRemoveMember = async (memberRowId) => {
@@ -115,32 +90,101 @@ export default function Groups() {
       .filter((m) => m.group_id === groupId)
       .sort((a, b) => GROUP_ROLE_ORDER.indexOf(a.group_role) - GROUP_ROLE_ORDER.indexOf(b.group_role))
 
-  const assignedPersonIds = (groupId) => new Set(membersForGroup(groupId).map((m) => m.person_id))
-
   return (
     <div>
       <div className="page-header">
         <div>
           <h1>Groups</h1>
-          <p className="subtitle">Sponsors and Catechumens organized into groups, with a Leader, Co-Leader, and Mentor each</p>
+          <p className="subtitle">Sponsors and Catechumens organized into groups and sub-ministries — members can belong to more than one</p>
         </div>
       </div>
 
       {error && <div className="error-msg">{error}</div>}
 
+      <GroupTypeSection
+        title="Groups"
+        groupType="group"
+        createLabel="+ New Group"
+        namePlaceholder="e.g. Group A"
+        isAdmin={isAdmin}
+        loading={loading}
+        groups={groups.filter((g) => g.group_type === 'group')}
+        profiles={profiles}
+        membersForGroup={membersForGroup}
+        onCreate={handleCreateGroup}
+        onDelete={handleDeleteGroup}
+        onRename={handleRename}
+        onAddMember={handleAddMember}
+        onRemoveMember={handleRemoveMember}
+        onChangeRole={handleChangeRole}
+      />
+
+      <div className="divider-heart">Sub-Ministries</div>
+
+      <GroupTypeSection
+        title="Sub-Ministries"
+        groupType="sub_ministry"
+        createLabel="+ New Sub-Ministry"
+        namePlaceholder="e.g. Music Ministry"
+        isAdmin={isAdmin}
+        loading={loading}
+        groups={groups.filter((g) => g.group_type === 'sub_ministry')}
+        profiles={profiles}
+        membersForGroup={membersForGroup}
+        onCreate={handleCreateGroup}
+        onDelete={handleDeleteGroup}
+        onRename={handleRename}
+        onAddMember={handleAddMember}
+        onRemoveMember={handleRemoveMember}
+        onChangeRole={handleChangeRole}
+      />
+    </div>
+  )
+}
+
+function GroupTypeSection({
+  groupType, createLabel, namePlaceholder, isAdmin, loading, groups, profiles,
+  membersForGroup, onCreate, onDelete, onRename, onAddMember, onRemoveMember, onChangeRole,
+}) {
+  const [newName, setNewName] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [editingGroupId, setEditingGroupId] = useState(null)
+  const [editName, setEditName] = useState('')
+  const [addDrafts, setAddDrafts] = useState({})
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault()
+    setCreating(true)
+    await onCreate(newName, groupType)
+    setNewName('')
+    setCreating(false)
+  }
+
+  const startRename = (g) => {
+    setEditingGroupId(g.id)
+    setEditName(g.name)
+  }
+
+  const submitRename = async (id) => {
+    await onRename(id, editName)
+    setEditingGroupId(null)
+  }
+
+  return (
+    <div>
       {isAdmin && (
-        <form className="card" onSubmit={handleCreateGroup} style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+        <form className="card" onSubmit={handleCreateSubmit} style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
           <div style={{ flex: 1 }}>
-            <label>New group name</label>
+            <label>{groupType === 'group' ? 'New group name' : 'New sub-ministry name'}</label>
             <input
               type="text"
-              placeholder="e.g. Group A"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder={namePlaceholder}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
             />
           </div>
-          <button className="btn gold" type="submit" disabled={creatingGroup} style={{ marginBottom: 14 }}>
-            {creatingGroup ? 'Creating…' : '+ New Group'}
+          <button className="btn gold" type="submit" disabled={creating} style={{ marginBottom: 14 }}>
+            {creating ? 'Creating…' : createLabel}
           </button>
         </form>
       )}
@@ -149,13 +193,13 @@ export default function Groups() {
         <p>Loading…</p>
       ) : groups.length === 0 ? (
         <div className="empty-state card">
-          <h3>No groups yet</h3>
-          <p>{isAdmin ? 'Create your first group above.' : 'Once Admin creates groups, they will appear here.'}</p>
+          <h3>{groupType === 'group' ? 'No groups yet' : 'No sub-ministries yet'}</h3>
+          <p>{isAdmin ? 'Create the first one above.' : 'Once Admin creates one, it will appear here.'}</p>
         </div>
       ) : (
         groups.map((g) => {
           const groupMembers = membersForGroup(g.id)
-          const assigned = assignedPersonIds(g.id)
+          const assigned = new Set(groupMembers.map((m) => m.person_id))
           const availableProfiles = profiles.filter((p) => !assigned.has(p.id))
           const draft = addDrafts[g.id] ?? { personId: '', groupRole: 'member' }
 
@@ -170,7 +214,7 @@ export default function Groups() {
                       onChange={(e) => setEditName(e.target.value)}
                       style={{ marginBottom: 0 }}
                     />
-                    <button className="btn gold small" onClick={() => handleRename(g.id)}>Save</button>
+                    <button className="btn gold small" onClick={() => submitRename(g.id)}>Save</button>
                     <button className="btn secondary small" onClick={() => setEditingGroupId(null)}>Cancel</button>
                   </div>
                 ) : (
@@ -179,7 +223,7 @@ export default function Groups() {
                 {isAdmin && editingGroupId !== g.id && (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn secondary small" onClick={() => startRename(g)}>Rename</button>
-                    <button className="btn danger small" onClick={() => handleDeleteGroup(g.id)}>Delete Group</button>
+                    <button className="btn danger small" onClick={() => onDelete(g.id)}>Delete</button>
                   </div>
                 )}
               </div>
@@ -197,7 +241,7 @@ export default function Groups() {
                           {isAdmin ? (
                             <select
                               value={m.group_role}
-                              onChange={(e) => handleChangeRole(m.id, e.target.value)}
+                              onChange={(e) => onChangeRole(m.id, e.target.value)}
                               style={{ marginBottom: 0 }}
                             >
                               {GROUP_ROLE_ORDER.map((r) => <option key={r} value={r}>{GROUP_ROLE_LABELS[r]}</option>)}
@@ -207,7 +251,7 @@ export default function Groups() {
                           )}
                         </td>
                         {isAdmin && (
-                          <td><button className="btn danger small" onClick={() => handleRemoveMember(m.id)}>Remove</button></td>
+                          <td><button className="btn danger small" onClick={() => onRemoveMember(m.id)}>Remove</button></td>
                         )}
                       </tr>
                     ))}
@@ -228,7 +272,7 @@ export default function Groups() {
                     </select>
                   </div>
                   <div>
-                    <label>Role in group</label>
+                    <label>Role</label>
                     <select
                       value={draft.groupRole}
                       onChange={(e) => setAddDrafts((prev) => ({ ...prev, [g.id]: { ...draft, groupRole: e.target.value } }))}
@@ -237,8 +281,15 @@ export default function Groups() {
                     </select>
                   </div>
                   <div style={{ flex: '0 0 auto' }}>
-                    <button className="btn secondary" onClick={() => handleAddMember(g.id)} style={{ marginBottom: 14 }}>
-                      + Add to Group
+                    <button
+                      className="btn secondary"
+                      onClick={() => {
+                        onAddMember(g.id, draft.personId, draft.groupRole)
+                        setAddDrafts((prev) => ({ ...prev, [g.id]: { personId: '', groupRole: 'member' } }))
+                      }}
+                      style={{ marginBottom: 14 }}
+                    >
+                      + Add
                     </button>
                   </div>
                 </div>

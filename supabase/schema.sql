@@ -48,6 +48,7 @@ create table if not exists important_dates (
 create table if not exists groups (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  group_type text not null default 'group' check (group_type in ('group','sub_ministry')),
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );

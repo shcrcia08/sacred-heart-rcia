@@ -40,6 +40,7 @@ create table if not exists important_dates (
   event_date date not null,
   location text,
   description text,
+  is_session boolean not null default false,
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );

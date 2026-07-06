@@ -6,14 +6,14 @@ export default function Attendance() {
   const { profile, role } = useAuth()
   const isManager = role === 'admin' || role === 'core_team'
 
-  return isManager ? <ManagerView /> : <SelfServiceView profile={profile} />
+  return isManager ? <ManagerView isAdmin={role === 'admin'} /> : <SelfServiceView profile={profile} />
 }
 
 // ---------- Sponsors / Catechumens: mark own absence ----------
 
 function SelfServiceView({ profile }) {
   const [dates, setDates] = useState([])
-  const [myRecords, setMyRecords] = useState({}) // important_date_id -> record
+  const [myRecords, setMyRecords] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [noteDrafts, setNoteDrafts] = useState({})
@@ -22,7 +22,7 @@ function SelfServiceView({ profile }) {
     setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
     const [{ data: dateRows, error: dateErr }, { data: attRows, error: attErr }] = await Promise.all([
-      supabase.from('important_dates').select('*').gte('event_date', today).order('event_date'),
+      supabase.from('important_dates').select('*').eq('is_session', true).gte('event_date', today).order('event_date'),
       supabase.from('attendance').select('*').eq('person_id', profile.id),
     ])
     if (dateErr) setError(dateErr.message)
@@ -62,7 +62,7 @@ function SelfServiceView({ profile }) {
       <div className="page-header">
         <div>
           <h1>Attendance</h1>
-          <p className="subtitle">Let Core Team know if you'll be away for an upcoming session</p>
+          <p className="subtitle">Let Admin know if you'll be away for an upcoming RCIA session</p>
         </div>
       </div>
 
@@ -72,8 +72,8 @@ function SelfServiceView({ profile }) {
         <p>Loading…</p>
       ) : dates.length === 0 ? (
         <div className="empty-state card">
-          <h3>No upcoming dates</h3>
-          <p>Once Core Team schedules a session, you can mark your attendance here.</p>
+          <h3>No upcoming sessions</h3>
+          <p>Once Admin schedules the next RCIA session, you can mark your attendance here.</p>
         </div>
       ) : (
         dates.map((d) => {
@@ -117,9 +117,9 @@ function SelfServiceView({ profile }) {
   )
 }
 
-// ---------- Admin / Core Team: roll-up view ----------
+// ---------- Admin / Core Team: roll-up + session management ----------
 
-function ManagerView() {
+function ManagerView({ isAdmin }) {
   const [dates, setDates] = useState([])
   const [selectedDate, setSelectedDate] = useState('')
   const [people, setPeople] = useState([])
@@ -127,17 +127,32 @@ function ManagerView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const loadDates = async () => {
-      const { data, error } = await supabase.from('important_dates').select('*').order('event_date', { ascending: false })
-      if (error) setError(error.message)
-      else {
-        setDates(data)
-        if (data.length > 0) setSelectedDate(data[0].id)
-      }
-      setLoading(false)
+  // single ad-hoc session
+  const [singleTitle, setSingleTitle] = useState('RCIA Session')
+  const [singleDate, setSingleDate] = useState('')
+  const [addingSingle, setAddingSingle] = useState(false)
+
+  // bulk weekly generator
+  const [rangeStart, setRangeStart] = useState('')
+  const [rangeEnd, setRangeEnd] = useState('')
+  const [preview, setPreview] = useState(null) // [{date, include}]
+  const [creatingBulk, setCreatingBulk] = useState(false)
+
+  const loadSessions = async () => {
+    const { data, error } = await supabase
+      .from('important_dates')
+      .select('*')
+      .eq('is_session', true)
+      .order('event_date', { ascending: false })
+    if (error) setError(error.message)
+    else {
+      setDates(data)
+      if (data.length > 0 && !selectedDate) setSelectedDate(data[0].id)
     }
-    loadDates()
+  }
+
+  useEffect(() => {
+    loadSessions().finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -161,23 +176,181 @@ function ManagerView() {
 
   const absentCount = people.filter((p) => records[p.id]?.status === 'absent').length
 
+  // ----- single session -----
+  const handleAddSingle = async (e) => {
+    e.preventDefault()
+    if (!singleDate) return
+    setAddingSingle(true)
+    setError('')
+    const { error } = await supabase.from('important_dates').insert({
+      title: singleTitle || 'RCIA Session',
+      event_date: singleDate,
+      is_session: true,
+    })
+    if (error) setError(error.message)
+    else {
+      setSingleDate('')
+      await loadSessions()
+    }
+    setAddingSingle(false)
+  }
+
+  // ----- bulk generator -----
+  const buildMondays = (startStr, endStr) => {
+    const start = new Date(startStr + 'T00:00:00')
+    const end = new Date(endStr + 'T00:00:00')
+    const mondays = []
+    const cursor = new Date(start)
+    const day = cursor.getDay() // 0=Sun ... 1=Mon
+    const diffToMonday = (8 - day) % 7
+    cursor.setDate(cursor.getDate() + diffToMonday)
+    while (cursor <= end) {
+      mondays.push(cursor.toISOString().slice(0, 10))
+      cursor.setDate(cursor.getDate() + 7)
+    }
+    return mondays
+  }
+
+  const handlePreview = (e) => {
+    e.preventDefault()
+    if (!rangeStart || !rangeEnd) return
+    const mondays = buildMondays(rangeStart, rangeEnd)
+    setPreview(mondays.map((date) => ({ date, include: true })))
+  }
+
+  const toggleIncluded = (index) => {
+    setPreview((prev) => prev.map((p, i) => (i === index ? { ...p, include: !p.include } : p)))
+  }
+
+  const handleCreateBulk = async () => {
+    const toCreate = preview.filter((p) => p.include).map((p) => ({
+      title: 'RCIA Session',
+      event_date: p.date,
+      is_session: true,
+    }))
+    if (toCreate.length === 0) return
+    setCreatingBulk(true)
+    setError('')
+    const { error } = await supabase.from('important_dates').insert(toCreate)
+    if (error) setError(error.message)
+    else {
+      setPreview(null)
+      setRangeStart('')
+      setRangeEnd('')
+      await loadSessions()
+    }
+    setCreatingBulk(false)
+  }
+
+  const handleDeleteSession = async (id) => {
+    if (!confirm('Delete this session? Any attendance records for it will also be removed.')) return
+    const { error } = await supabase.from('important_dates').delete().eq('id', id)
+    if (error) setError(error.message)
+    else {
+      if (selectedDate === id) setSelectedDate('')
+      await loadSessions()
+    }
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  const upcoming = dates.filter((d) => d.event_date >= today).sort((a, b) => a.event_date.localeCompare(b.event_date))
+
   return (
     <div>
       <div className="page-header">
         <div>
           <h1>Attendance</h1>
-          <p className="subtitle">Track who's marked themselves absent for each session</p>
+          <p className="subtitle">RCIA runs every Monday (except public holidays) — track who's marked away</p>
         </div>
       </div>
 
       {error && <div className="error-msg">{error}</div>}
 
+      {isAdmin && (
+        <div className="card">
+          <h3>Generate Weekly Sessions</h3>
+          <p className="hint" style={{ marginTop: -2 }}>
+            Creates a session for every Monday in the range — uncheck any that fall on a public holiday before creating.
+          </p>
+          <form onSubmit={handlePreview} className="field-row" style={{ alignItems: 'flex-end' }}>
+            <div>
+              <label>From</label>
+              <input type="date" required value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} />
+            </div>
+            <div>
+              <label>To</label>
+              <input type="date" required value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} />
+            </div>
+            <div style={{ flex: '0 0 auto' }}>
+              <button className="btn secondary" type="submit" style={{ marginBottom: 14 }}>Preview Mondays</button>
+            </div>
+          </form>
+
+          {preview && (
+            <div>
+              {preview.length === 0 ? (
+                <p style={{ color: 'var(--ink-soft)' }}>No Mondays found in that range.</p>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 18px', margin: '10px 0' }}>
+                    {preview.map((p, i) => (
+                      <label key={p.date} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 400, fontSize: '0.9rem' }}>
+                        <input type="checkbox" checked={p.include} onChange={() => toggleIncluded(i)} style={{ marginBottom: 0 }} />
+                        {new Date(p.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                      </label>
+                    ))}
+                  </div>
+                  <button className="btn gold" onClick={handleCreateBulk} disabled={creatingBulk}>
+                    {creatingBulk ? 'Creating…' : `Create ${preview.filter(p => p.include).length} Session(s)`}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="divider-heart">Add a Single Session</div>
+          <form onSubmit={handleAddSingle} className="field-row" style={{ alignItems: 'flex-end' }}>
+            <div>
+              <label>Title</label>
+              <input type="text" value={singleTitle} onChange={(e) => setSingleTitle(e.target.value)} />
+            </div>
+            <div>
+              <label>Date</label>
+              <input type="date" required value={singleDate} onChange={(e) => setSingleDate(e.target.value)} />
+            </div>
+            <div style={{ flex: '0 0 auto' }}>
+              <button className="btn secondary" type="submit" disabled={addingSingle} style={{ marginBottom: 14 }}>
+                {addingSingle ? 'Adding…' : '+ Add Session'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {isAdmin && upcoming.length > 0 && (
+        <div className="card">
+          <h3>Upcoming Sessions</h3>
+          <table>
+            <thead><tr><th>Date</th><th>Title</th><th></th></tr></thead>
+            <tbody>
+              {upcoming.map((d) => (
+                <tr key={d.id}>
+                  <td>{new Date(d.event_date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                  <td>{d.title}</td>
+                  <td><button className="btn danger small" onClick={() => handleDeleteSession(d.id)}>Delete</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {loading ? (
         <p>Loading…</p>
       ) : dates.length === 0 ? (
         <div className="empty-state card">
-          <h3>No dates yet</h3>
-          <p>Add an important date first, then attendance can be tracked against it.</p>
+          <h3>No sessions yet</h3>
+          <p>{isAdmin ? 'Generate weekly sessions above to start tracking attendance.' : 'Once Admin schedules sessions, attendance can be tracked here.'}</p>
         </div>
       ) : (
         <div className="card">

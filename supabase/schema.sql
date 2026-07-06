@@ -233,6 +233,9 @@ create policy "profiles_update_admin" on profiles for update
 create policy "profiles_update_self" on profiles for update
   using (id = auth.uid());
 
+create policy "profiles_delete_admin" on profiles for delete
+  using (get_my_role() = 'admin');
+
 -- announcements: current-cycle items are visible to everyone (including
 -- logged-out visitors); items from past (archived) cycles are visible only
 -- to Admin. Only Admin can write.

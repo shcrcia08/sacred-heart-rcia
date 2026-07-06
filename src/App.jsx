@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 import Announcements from './pages/Announcements'
 import ImportantDates from './pages/ImportantDates'
 import Schedule from './pages/Schedule'
@@ -51,6 +52,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route path="/" element={<Layout />}>
         {/* Public: no login required, so WhatsApp links open straight to content */}

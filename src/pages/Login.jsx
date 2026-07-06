@@ -23,6 +23,19 @@ export default function Login() {
     setBusy(false)
   }
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+    setError('')
+    setNotice('')
+    setBusy(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) setError(error.message)
+    else setNotice('Check your email for a link to reset your password.')
+    setBusy(false)
+  }
+
   const handleSignUp = async (e) => {
     e.preventDefault()
     setError('')
@@ -88,6 +101,33 @@ export default function Login() {
             <button className="btn" type="submit" disabled={busy} style={{ width: '100%', justifyContent: 'center' }}>
               {busy ? 'Signing in…' : 'Sign In'}
             </button>
+            <div style={{ textAlign: 'center', marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={() => { setMode('forgot'); setError(''); setNotice('') }}
+                style={{ background: 'none', border: 'none', color: 'var(--slate)', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Forgot password?
+              </button>
+            </div>
+          </form>
+        ) : mode === 'forgot' ? (
+          <form onSubmit={handleForgotPassword}>
+            <label>Email</label>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <div className="hint">We'll email you a link to set a new password.</div>
+            <button className="btn" type="submit" disabled={busy} style={{ width: '100%', justifyContent: 'center' }}>
+              {busy ? 'Sending…' : 'Send Reset Link'}
+            </button>
+            <div style={{ textAlign: 'center', marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={() => { setMode('signin'); setError(''); setNotice('') }}
+                style={{ background: 'none', border: 'none', color: 'var(--slate)', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                ← Back to Sign In
+              </button>
+            </div>
           </form>
         ) : (
           <form onSubmit={handleSignUp}>

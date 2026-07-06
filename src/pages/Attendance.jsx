@@ -205,6 +205,13 @@ function ManagerView({ isAdmin }) {
     setAddingSingle(false)
   }
 
+  const toLocalISODate = (d) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
   const buildMondays = (startStr, endStr) => {
     const start = new Date(startStr + 'T00:00:00')
     const end = new Date(endStr + 'T00:00:00')
@@ -214,7 +221,7 @@ function ManagerView({ isAdmin }) {
     const diffToMonday = (8 - day) % 7
     cursor.setDate(cursor.getDate() + diffToMonday)
     while (cursor <= end) {
-      mondays.push(cursor.toISOString().slice(0, 10))
+      mondays.push(toLocalISODate(cursor))
       cursor.setDate(cursor.getDate() + 7)
     }
     return mondays

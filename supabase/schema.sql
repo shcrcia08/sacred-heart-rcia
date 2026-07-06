@@ -10,7 +10,6 @@ create extension if not exists "pgcrypto";
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text not null,
-  phone text,
   role text not null default 'catechumen' check (role in ('admin','core_team','sponsor','catechumen')),
   created_at timestamptz not null default now()
 );
@@ -131,7 +130,7 @@ as $$
 $$;
 
 -- ---------- Auto-create profile row on signup ----------
--- Reads full_name / phone / role out of the signUp() metadata payload.
+-- Reads full_name / role out of the signUp() metadata payload.
 -- This runs with elevated privileges regardless of email-confirmation settings.
 
 create or replace function handle_new_user()
@@ -141,11 +140,10 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into profiles (id, full_name, phone, role)
+  insert into profiles (id, full_name, role)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', 'New Member'),
-    new.raw_user_meta_data->>'phone',
     case
       when new.raw_user_meta_data->>'role' in ('sponsor','catechumen')
         then new.raw_user_meta_data->>'role'

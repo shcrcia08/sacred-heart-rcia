@@ -7,7 +7,6 @@ export default function Login() {
   const [mode, setMode] = useState('signin')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('catechumen')
   const [error, setError] = useState('')
@@ -41,14 +40,14 @@ export default function Login() {
     setError('')
     setNotice('')
     setBusy(true)
-    // full_name, phone, and role are passed as user metadata. A database
-    // trigger (see supabase/schema.sql) reads this metadata and creates the
-    // matching row in `profiles` automatically — this works whether or not
-    // email confirmation is required, since it runs server-side on signup.
+    // full_name and role are passed as user metadata. A database trigger
+    // (see supabase/schema.sql) reads this metadata and creates the matching
+    // row in `profiles` automatically — this works whether or not email
+    // confirmation is required, since it runs server-side on signup.
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, phone, role } },
+      options: { data: { full_name: fullName, role } },
     })
     if (error) {
       setError(error.message)
@@ -139,8 +138,6 @@ export default function Login() {
               <option value="sponsor">Sponsor</option>
             </select>
             <div className="hint">Core Team and Admin accounts are set up by an administrator.</div>
-            <label>WhatsApp phone number</label>
-            <input type="tel" placeholder="+65 9123 4567" required value={phone} onChange={(e) => setPhone(e.target.value)} />
             <label>Email</label>
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             <label>Password</label>

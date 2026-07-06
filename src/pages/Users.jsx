@@ -154,12 +154,11 @@ export default function Users() {
       <div className="card">
         {loading ? <p>Loading…</p> : (
           <table>
-            <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Role</th><th></th></tr></thead>
             <tbody>
               {profiles.map((p) => (
                 <tr key={p.id}>
                   <td>{p.full_name}</td>
-                  <td>{p.phone}</td>
                   <td>
                     <select value={p.role} onChange={(e) => handleRoleChange(p.id, e.target.value)} style={{ marginBottom: 0 }}>
                       {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}

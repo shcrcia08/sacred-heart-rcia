@@ -15,6 +15,13 @@ create table if not exists profiles (
   created_at timestamptz not null default now()
 );
 
+create table if not exists cycles (
+  id uuid primary key default gen_random_uuid(),
+  label text not null,
+  is_current boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists announcements (
   id uuid primary key default gen_random_uuid(),
   title text not null,
@@ -127,6 +134,29 @@ create trigger trg_prevent_role_escalation
   before update on profiles
   for each row execute function prevent_role_self_escalation();
 
+-- ---------- Only one cycle can be "current" at a time ----------
+
+create or replace function enforce_single_current_cycle()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.is_current then
+    update cycles set is_current = false where id <> new.id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_single_current_cycle on cycles;
+create trigger trg_single_current_cycle
+  after insert or update on cycles
+  for each row
+  when (new.is_current)
+  execute function enforce_single_current_cycle();
+
 -- ---------- Row Level Security ----------
 
 alter table profiles enable row level security;
@@ -135,6 +165,7 @@ alter table important_dates enable row level security;
 alter table sponsor_catechumen enable row level security;
 alter table attendance enable row level security;
 alter table schedules enable row level security;
+alter table cycles enable row level security;
 
 -- profiles: everyone signed in can view the directory; admins can update
 -- anyone, members can update their own non-role fields (role changes are
@@ -149,32 +180,38 @@ create policy "profiles_update_self" on profiles for update
   using (id = auth.uid());
 
 -- announcements: anyone (including logged-out visitors, e.g. from a WhatsApp
--- link) can read; only Admin/Core Team can write.
+-- link) can read; only Admin can write.
 create policy "announcements_select" on announcements for select
   using (true);
 
+drop policy if exists "announcements_write" on announcements;
 create policy "announcements_write" on announcements for insert
-  with check (get_my_role() in ('admin','core_team'));
+  with check (get_my_role() = 'admin');
 
+drop policy if exists "announcements_update" on announcements;
 create policy "announcements_update" on announcements for update
-  using (get_my_role() in ('admin','core_team'));
+  using (get_my_role() = 'admin');
 
+drop policy if exists "announcements_delete" on announcements;
 create policy "announcements_delete" on announcements for delete
-  using (get_my_role() in ('admin','core_team'));
+  using (get_my_role() = 'admin');
 
 -- important_dates: anyone (including logged-out visitors) can read; only
--- Admin/Core Team can write.
+-- Admin can write.
 create policy "dates_select" on important_dates for select
   using (true);
 
+drop policy if exists "dates_write" on important_dates;
 create policy "dates_write" on important_dates for insert
-  with check (get_my_role() in ('admin','core_team'));
+  with check (get_my_role() = 'admin');
 
+drop policy if exists "dates_update" on important_dates;
 create policy "dates_update" on important_dates for update
-  using (get_my_role() in ('admin','core_team'));
+  using (get_my_role() = 'admin');
 
+drop policy if exists "dates_delete" on important_dates;
 create policy "dates_delete" on important_dates for delete
-  using (get_my_role() in ('admin','core_team'));
+  using (get_my_role() = 'admin');
 
 -- sponsor_catechumen: everyone can read; only Admin/Core Team manage pairings.
 create policy "pairs_select" on sponsor_catechumen for select
@@ -228,6 +265,22 @@ create policy "schedule_files_insert_admin" on storage.objects for insert
 
 create policy "schedule_files_delete_admin" on storage.objects for delete
   using (bucket_id = 'schedules' and get_my_role() = 'admin');
+
+-- ---------- RCIA Cycles ----------
+
+-- everyone can see which cycle is current (shown as a banner); only Admin
+-- can create cycles or change which one is current.
+create policy "cycles_select" on cycles for select
+  using (true);
+
+create policy "cycles_insert_admin" on cycles for insert
+  with check (get_my_role() = 'admin');
+
+create policy "cycles_update_admin" on cycles for update
+  using (get_my_role() = 'admin');
+
+create policy "cycles_delete_admin" on cycles for delete
+  using (get_my_role() = 'admin');
 
 -- ---------- Announcement attachments (images/documents) ----------
 

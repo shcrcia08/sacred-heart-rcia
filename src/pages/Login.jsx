@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { useCurrentCycle } from '../hooks/useCurrentCycle'
 
 export default function Login() {
+  const { cycle } = useCurrentCycle()
   const [mode, setMode] = useState('signin')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -52,7 +54,9 @@ export default function Login() {
       <div className="login-card">
         <div className="login-brand">
           <img src="/church-logo-full.png" alt="Church of the Sacred Heart" style={{ maxWidth: 240, width: '100%' }} />
-          <span className="ministry" style={{ display: 'block', marginTop: 10 }}>RCIA Ministry Portal</span>
+          <span className="ministry" style={{ display: 'block', marginTop: 10 }}>
+            RCIA Ministry Portal{cycle ? ` · ${cycle.label}` : ''}
+          </span>
         </div>
 
         <div className="login-toggle">

@@ -48,6 +48,9 @@ export default function Layout() {
                 Attendance
               </NavLink>
             )}
+            <NavLink to="/prayer-booklet" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+              Prayer Booklet
+            </NavLink>
             {canManage && (
               <NavLink to="/people" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
                 Sponsors &amp; Catechumens

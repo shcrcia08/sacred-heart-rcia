@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Announcements from './pages/Announcements'
 import ImportantDates from './pages/ImportantDates'
 import Schedule from './pages/Schedule'
+import PrayerBooklet from './pages/PrayerBooklet'
 import Archive from './pages/Archive'
 import Attendance from './pages/Attendance'
 import People from './pages/People'
@@ -56,6 +57,7 @@ export default function App() {
         <Route index element={<Announcements />} />
         <Route path="dates" element={<ImportantDates />} />
         <Route path="schedule" element={<Schedule />} />
+        <Route path="prayer-booklet" element={<PrayerBooklet />} />
         <Route
           path="archive"
           element={<RequireAuth><RequireRole allowed={['admin']}><Archive /></RequireRole></RequireAuth>}

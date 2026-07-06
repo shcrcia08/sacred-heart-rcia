@@ -62,6 +62,24 @@ create table if not exists schedules (
   created_at timestamptz not null default now()
 );
 
+create table if not exists prayer_booklets (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  file_path text not null,
+  file_url text not null,
+  uploaded_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists prayer_booklets (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  file_path text not null,
+  file_url text not null,
+  uploaded_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists attendance (
   id uuid primary key default gen_random_uuid(),
   important_date_id uuid not null references important_dates(id) on delete cascade,
@@ -181,6 +199,8 @@ alter table sponsor_catechumen enable row level security;
 alter table attendance enable row level security;
 alter table schedules enable row level security;
 alter table cycles enable row level security;
+alter table prayer_booklets enable row level security;
+alter table prayer_booklets enable row level security;
 
 -- profiles: everyone signed in can view the directory; admins can update
 -- anyone, members can update their own non-role fields (role changes are
@@ -306,6 +326,57 @@ create policy "cycles_update_admin" on cycles for update
 
 create policy "cycles_delete_admin" on cycles for delete
   using (get_my_role() = 'admin');
+
+-- ---------- Prayer Booklet PDFs ----------
+
+-- everyone (including logged-out visitors) can read; only Admin can
+-- upload/remove.
+create policy "prayer_booklets_select" on prayer_booklets for select
+  using (true);
+
+create policy "prayer_booklets_insert_admin" on prayer_booklets for insert
+  with check (get_my_role() = 'admin');
+
+create policy "prayer_booklets_delete_admin" on prayer_booklets for delete
+  using (get_my_role() = 'admin');
+
+insert into storage.buckets (id, name, public)
+values ('prayer-booklets', 'prayer-booklets', true)
+on conflict (id) do nothing;
+
+create policy "prayer_booklet_files_select" on storage.objects for select
+  using (bucket_id = 'prayer-booklets');
+
+create policy "prayer_booklet_files_insert_admin" on storage.objects for insert
+  with check (bucket_id = 'prayer-booklets' and get_my_role() = 'admin');
+
+create policy "prayer_booklet_files_delete_admin" on storage.objects for delete
+  using (bucket_id = 'prayer-booklets' and get_my_role() = 'admin');
+
+-- ---------- Prayer Booklet PDFs ----------
+
+-- everyone can read; only Admin can upload/remove.
+create policy "prayer_booklets_select" on prayer_booklets for select
+  using (true);
+
+create policy "prayer_booklets_insert_admin" on prayer_booklets for insert
+  with check (get_my_role() = 'admin');
+
+create policy "prayer_booklets_delete_admin" on prayer_booklets for delete
+  using (get_my_role() = 'admin');
+
+insert into storage.buckets (id, name, public)
+values ('prayer-booklets', 'prayer-booklets', true)
+on conflict (id) do nothing;
+
+create policy "prayer_booklet_files_select" on storage.objects for select
+  using (bucket_id = 'prayer-booklets');
+
+create policy "prayer_booklet_files_insert_admin" on storage.objects for insert
+  with check (bucket_id = 'prayer-booklets' and get_my_role() = 'admin');
+
+create policy "prayer_booklet_files_delete_admin" on storage.objects for delete
+  using (bucket_id = 'prayer-booklets' and get_my_role() = 'admin');
 
 -- ---------- Announcement attachments (images/documents) ----------
 

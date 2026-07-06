@@ -138,12 +138,12 @@ export default function Schedule() {
               </div>
             </div>
             <iframe
-              src={items[0].file_url}
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(items[0].file_url)}&embedded=true`}
               title={items[0].title}
               style={{ width: '100%', height: '75vh', border: '1px solid var(--line)', borderRadius: 8 }}
             />
             <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
-              Not showing correctly? Some mobile browsers don't preview PDFs inline — use "Open in New Tab" instead.
+              Not showing correctly? Use "Open in New Tab" instead.
             </p>
           </div>
 

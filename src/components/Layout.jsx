@@ -13,8 +13,6 @@ export default function Layout() {
   const { session, profile, role, signOut } = useAuth()
   const { cycle } = useCurrentCycle()
 
-  const canManage = role === 'admin' || role === 'core_team'
-
   return (
     <div>
       {cycle && (
@@ -51,9 +49,9 @@ export default function Layout() {
             <NavLink to="/prayer-booklet" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
               Prayer Booklet
             </NavLink>
-            {canManage && (
-              <NavLink to="/people" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
-                Sponsors &amp; Catechumens
+            {session && (
+              <NavLink to="/groups" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+                Groups
               </NavLink>
             )}
             {role === 'admin' && (

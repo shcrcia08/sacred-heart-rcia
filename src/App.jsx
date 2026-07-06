@@ -8,7 +8,7 @@ import Schedule from './pages/Schedule'
 import PrayerBooklet from './pages/PrayerBooklet'
 import Archive from './pages/Archive'
 import Attendance from './pages/Attendance'
-import People from './pages/People'
+import Groups from './pages/Groups'
 import Users from './pages/Users'
 
 // Wraps a route that requires the person to be signed in at all.
@@ -66,8 +66,8 @@ export default function App() {
         {/* Requires an account */}
         <Route path="attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
         <Route
-          path="people"
-          element={<RequireAuth><RequireRole allowed={['admin', 'core_team']}><People /></RequireRole></RequireAuth>}
+          path="groups"
+          element={<RequireAuth><Groups /></RequireAuth>}
         />
         <Route
           path="users"

@@ -45,6 +45,22 @@ create table if not exists important_dates (
   created_at timestamptz not null default now()
 );
 
+create table if not exists groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists group_members (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references groups(id) on delete cascade,
+  person_id uuid not null references profiles(id) on delete cascade,
+  group_role text not null default 'member' check (group_role in ('member','leader','co_leader','mentor')),
+  created_at timestamptz not null default now(),
+  unique (group_id, person_id)
+);
+
 create table if not exists sponsor_catechumen (
   id uuid primary key default gen_random_uuid(),
   sponsor_id uuid not null references profiles(id) on delete cascade,
@@ -197,6 +213,8 @@ alter table profiles enable row level security;
 alter table announcements enable row level security;
 alter table important_dates enable row level security;
 alter table sponsor_catechumen enable row level security;
+alter table groups enable row level security;
+alter table group_members enable row level security;
 alter table attendance enable row level security;
 alter table schedules enable row level security;
 alter table cycles enable row level security;
@@ -263,6 +281,34 @@ create policy "pairs_write" on sponsor_catechumen for insert
 
 create policy "pairs_delete" on sponsor_catechumen for delete
   using (get_my_role() in ('admin','core_team'));
+
+-- ---------- Groups ----------
+
+-- everyone signed in can view groups and their members; only Admin can
+-- create groups or assign/remove people.
+create policy "groups_select" on groups for select
+  using (auth.role() = 'authenticated');
+
+create policy "groups_insert_admin" on groups for insert
+  with check (get_my_role() = 'admin');
+
+create policy "groups_update_admin" on groups for update
+  using (get_my_role() = 'admin');
+
+create policy "groups_delete_admin" on groups for delete
+  using (get_my_role() = 'admin');
+
+create policy "group_members_select" on group_members for select
+  using (auth.role() = 'authenticated');
+
+create policy "group_members_insert_admin" on group_members for insert
+  with check (get_my_role() = 'admin');
+
+create policy "group_members_update_admin" on group_members for update
+  using (get_my_role() = 'admin');
+
+create policy "group_members_delete_admin" on group_members for delete
+  using (get_my_role() = 'admin');
 
 -- attendance: Admin can see and manage everything; a Sponsor, Catechumen,
 -- or Core Team member can only see and mark their own record.

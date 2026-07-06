@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { SacredHeartMark } from '../components/SacredHeartMark'
 
 export default function Login() {
   const [mode, setMode] = useState('signin')
@@ -52,9 +51,8 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-brand">
-          <SacredHeartMark size={48} color="#A9843A" />
-          <h2 style={{ marginBottom: 2 }}>Church of the Sacred Heart</h2>
-          <span className="ministry">RCIA Ministry Portal</span>
+          <img src="/church-logo-full.png" alt="Church of the Sacred Heart" style={{ maxWidth: 240, width: '100%' }} />
+          <span className="ministry" style={{ display: 'block', marginTop: 10 }}>RCIA Ministry Portal</span>
         </div>
 
         <div className="login-toggle">

@@ -78,9 +78,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .sacred-heart-mark {
-  width: 30px;
-  height: 30px;
+  height: 32px;
+  width: auto;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 .sidebar-brand-text {

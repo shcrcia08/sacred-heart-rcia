@@ -1,6 +1,5 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { SacredHeartMark } from './SacredHeartMark'
 
 const ROLE_LABELS = {
   admin: 'Admin',
@@ -18,7 +17,7 @@ export default function Layout() {
     <div className="app-shell">
       <nav className="sidebar">
         <div className="sidebar-brand">
-          <SacredHeartMark size={30} color="#A9843A" />
+          <img src="/church-mark.png" alt="Church of the Sacred Heart crest" className="sacred-heart-mark" />
           <div className="sidebar-brand-text">
             <span className="parish">Sacred Heart</span>
             <span className="ministry">RCIA Ministry</span>

@@ -117,25 +117,62 @@ export default function Schedule() {
           <p>Once Admin uploads a schedule PDF, it will appear here.</p>
         </div>
       ) : (
-        items.map((item) => (
-          <div className="card" key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-            <div>
-              <h3 style={{ marginBottom: 4 }}>{item.title}</h3>
-              <span style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
-                Uploaded {new Date(item.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                {item.profiles?.full_name ? ` by ${item.profiles.full_name}` : ''}
-              </span>
+        <>
+          {/* Current schedule — embedded inline */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+              <div>
+                <h3 style={{ marginBottom: 4 }}>{items[0].title}</h3>
+                <span style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
+                  Uploaded {new Date(items[0].created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {items[0].profiles?.full_name ? ` by ${items[0].profiles.full_name}` : ''}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <a className="btn secondary small" href={items[0].file_url} target="_blank" rel="noreferrer">
+                  Open in New Tab
+                </a>
+                {canUpload && (
+                  <button className="btn danger small" onClick={() => handleDelete(items[0])}>Delete</button>
+                )}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <a className="btn gold small" href={item.file_url} target="_blank" rel="noreferrer">
-                View / Download PDF
-              </a>
-              {canUpload && (
-                <button className="btn danger small" onClick={() => handleDelete(item)}>Delete</button>
-              )}
-            </div>
+            <iframe
+              src={items[0].file_url}
+              title={items[0].title}
+              style={{ width: '100%', height: '75vh', border: '1px solid var(--line)', borderRadius: 8 }}
+            />
+            <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
+              Not showing correctly? Some mobile browsers don't preview PDFs inline — use "Open in New Tab" instead.
+            </p>
           </div>
-        ))
+
+          {/* Older versions — compact list */}
+          {items.length > 1 && (
+            <>
+              <div className="divider-heart">Previous Versions</div>
+              {items.slice(1).map((item) => (
+                <div className="card" key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                  <div>
+                    <h3 style={{ marginBottom: 4 }}>{item.title}</h3>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
+                      Uploaded {new Date(item.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {item.profiles?.full_name ? ` by ${item.profiles.full_name}` : ''}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <a className="btn gold small" href={item.file_url} target="_blank" rel="noreferrer">
+                      View / Download PDF
+                    </a>
+                    {canUpload && (
+                      <button className="btn danger small" onClick={() => handleDelete(item)}>Delete</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </>
       )}
     </div>
   )

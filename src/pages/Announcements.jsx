@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { useCurrentCycle } from '../hooks/useCurrentCycle'
 
 function buildWhatsAppLink(title, body) {
   const message =
@@ -12,7 +13,8 @@ function buildWhatsAppLink(title, body) {
 
 export default function Announcements() {
   const { profile, role } = useAuth()
-  const canPost = role === 'admin' || role === 'core_team'
+  const { cycle } = useCurrentCycle()
+  const canPost = role === 'admin'
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -25,16 +27,18 @@ export default function Announcements() {
 
   const load = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    let query = supabase
       .from('announcements')
       .select('*, profiles:created_by(full_name)')
       .order('created_at', { ascending: false })
+    if (cycle) query = query.eq('cycle_id', cycle.id)
+    const { data, error } = await query
     if (error) setError(error.message)
     else setItems(data)
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [cycle?.id])
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -65,6 +69,7 @@ export default function Announcements() {
       attachment_url,
       attachment_name,
       attachment_type,
+      cycle_id: cycle?.id ?? null,
       created_by: profile.id,
     })
     if (error) {

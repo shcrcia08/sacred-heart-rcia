@@ -16,7 +16,7 @@ function buildWhatsAppLink(item) {
 
 export default function ImportantDates() {
   const { profile, role } = useAuth()
-  const canManage = role === 'admin' || role === 'core_team'
+  const canManage = role === 'admin'
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,6 +30,7 @@ export default function ImportantDates() {
     const { data, error } = await supabase
       .from('important_dates')
       .select('*')
+      .eq('is_session', false)
       .order('event_date', { ascending: true })
     if (error) setError(error.message)
     else setItems(data)

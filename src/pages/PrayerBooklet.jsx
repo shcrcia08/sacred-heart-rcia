@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../context/AuthContext'
-import { useCurrentCycle } from '../hooks/useCurrentCycle'
 
-export default function Schedule() {
+export default function PrayerBooklet() {
   const { profile, role } = useAuth()
-  const { cycle } = useCurrentCycle()
   const canUpload = role === 'admin'
 
   const [items, setItems] = useState([])
@@ -18,18 +16,16 @@ export default function Schedule() {
 
   const load = async () => {
     setLoading(true)
-    let query = supabase
-      .from('schedules')
+    const { data, error } = await supabase
+      .from('prayer_booklets')
       .select('*, profiles:uploaded_by(full_name)')
       .order('created_at', { ascending: false })
-    if (cycle) query = query.eq('cycle_id', cycle.id)
-    const { data, error } = await query
     if (error) setError(error.message)
     else setItems(data)
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [cycle?.id])
+  useEffect(() => { load() }, [])
 
   const handleUpload = async (e) => {
     e.preventDefault()
@@ -39,7 +35,7 @@ export default function Schedule() {
 
     const filePath = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`
 
-    const { error: uploadError } = await supabase.storage.from('schedules').upload(filePath, file, {
+    const { error: uploadError } = await supabase.storage.from('prayer-booklets').upload(filePath, file, {
       contentType: 'application/pdf',
     })
     if (uploadError) {
@@ -48,13 +44,12 @@ export default function Schedule() {
       return
     }
 
-    const { data: urlData } = supabase.storage.from('schedules').getPublicUrl(filePath)
+    const { data: urlData } = supabase.storage.from('prayer-booklets').getPublicUrl(filePath)
 
-    const { error: insertError } = await supabase.from('schedules').insert({
+    const { error: insertError } = await supabase.from('prayer_booklets').insert({
       title: title || file.name,
       file_path: filePath,
       file_url: urlData.publicUrl,
-      cycle_id: cycle?.id ?? null,
       uploaded_by: profile.id,
     })
     if (insertError) {
@@ -70,8 +65,8 @@ export default function Schedule() {
 
   const handleDelete = async (item) => {
     if (!confirm(`Remove "${item.title}"?`)) return
-    await supabase.storage.from('schedules').remove([item.file_path])
-    const { error } = await supabase.from('schedules').delete().eq('id', item.id)
+    await supabase.storage.from('prayer-booklets').remove([item.file_path])
+    const { error } = await supabase.from('prayer_booklets').delete().eq('id', item.id)
     if (error) setError(error.message)
     else load()
   }
@@ -80,12 +75,12 @@ export default function Schedule() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Schedule</h1>
-          <p className="subtitle">The RCIA session schedule, as a downloadable PDF</p>
+          <h1>Prayer Booklet</h1>
+          <p className="subtitle">Prayers and reflections for the RCIA journey</p>
         </div>
         {canUpload && (
           <button className="btn" onClick={() => setShowForm((s) => !s)}>
-            {showForm ? 'Cancel' : '+ Upload Schedule'}
+            {showForm ? 'Cancel' : '+ Upload Booklet'}
           </button>
         )}
       </div>
@@ -97,7 +92,7 @@ export default function Schedule() {
           <label>Title</label>
           <input
             type="text"
-            placeholder="e.g. RCIA Schedule 2026"
+            placeholder="e.g. RCIA Prayer Booklet 2026/2027"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
@@ -118,12 +113,12 @@ export default function Schedule() {
         <p>Loading…</p>
       ) : items.length === 0 ? (
         <div className="empty-state card">
-          <h3>No schedule uploaded yet</h3>
-          <p>Once Admin uploads a schedule PDF, it will appear here.</p>
+          <h3>No prayer booklet uploaded yet</h3>
+          <p>Once Admin uploads a booklet, it will appear here.</p>
         </div>
       ) : (
         <>
-          {/* Current schedule — embedded inline */}
+          {/* Current booklet — embedded inline */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
               <div>
@@ -152,7 +147,7 @@ export default function Schedule() {
             </p>
           </div>
 
-          {/* Older versions — compact list */}
+          {/* Older versions */}
           {items.length > 1 && (
             <>
               <div className="divider-heart">Previous Versions</div>

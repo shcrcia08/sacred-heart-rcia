@@ -2,11 +2,14 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 import Announcements from './pages/Announcements'
 import ImportantDates from './pages/ImportantDates'
 import Schedule from './pages/Schedule'
+import PrayerBooklet from './pages/PrayerBooklet'
+import Archive from './pages/Archive'
 import Attendance from './pages/Attendance'
-import People from './pages/People'
+import Groups from './pages/Groups'
 import Users from './pages/Users'
 
 // Wraps a route that requires the person to be signed in at all.
@@ -49,18 +52,24 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route path="/" element={<Layout />}>
         {/* Public: no login required, so WhatsApp links open straight to content */}
         <Route index element={<Announcements />} />
         <Route path="dates" element={<ImportantDates />} />
         <Route path="schedule" element={<Schedule />} />
+        <Route path="prayer-booklet" element={<PrayerBooklet />} />
+        <Route
+          path="archive"
+          element={<RequireAuth><RequireRole allowed={['admin']}><Archive /></RequireRole></RequireAuth>}
+        />
 
         {/* Requires an account */}
         <Route path="attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
         <Route
-          path="people"
-          element={<RequireAuth><RequireRole allowed={['admin', 'core_team']}><People /></RequireRole></RequireAuth>}
+          path="groups"
+          element={<RequireAuth><Groups /></RequireAuth>}
         />
         <Route
           path="users"

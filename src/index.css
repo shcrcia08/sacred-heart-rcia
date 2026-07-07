@@ -50,6 +50,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: 2px;
 }
 
+.cycle-banner {
+  background: var(--ink);
+  color: #E9DCB8;
+  text-align: center;
+  padding: 7px 12px;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* ---------- Layout shell ---------- */
 
 .app-shell {
@@ -350,6 +361,26 @@ th { color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; text-transform
   color: var(--ink-soft);
   margin-top: -8px;
   margin-bottom: 14px;
+}
+
+.scroll-cards {
+  max-height: 900px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.scroll-table {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.scroll-table table { margin: 0; }
+
+.scroll-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--white);
+  z-index: 1;
 }
 
 /* ---------- Login page ---------- */
